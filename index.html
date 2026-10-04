@@ -1,0 +1,1264 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#050505">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Operation 88</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800;900&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: a black training-log console. Hero (day count + rings), sticky tabs, one column of panels. Committed dark look. */
+:root{
+  color-scheme:dark;
+  --bg:#050505; --panel:#0D0D0E; --raise:#151517; --line:#222225; --line2:#2E2E33;
+  --ink:#F1F0EA; --muted:#8B8A90; --dim:#56555C;
+  --dsa:#5EC8FF; --gym:#FFB23F; --move:#FF5D8F; --good:#7BE0A0; --bad:#FF6B5B;
+  --display:"Big Shoulders Display","Oswald","Arial Narrow",Impact,sans-serif;
+  --body:"Geist",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"Geist Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+*{box-sizing:border-box}
+html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+img{max-width:100%}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--body);-webkit-font-smoothing:antialiased}
+.wrap{max-width:640px;margin:0 auto;padding-inline:16px;padding-block:18px 64px}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.eyebrow{font:500 11px/1.2 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+button{font:inherit;color:inherit;cursor:pointer;background:none;border:0}
+button:disabled{opacity:.35;cursor:default}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+input,select,textarea{font:inherit;color:var(--ink)}
+.mark{font:900 18px/1 var(--display);letter-spacing:.06em;text-transform:uppercase}
+.mark span{color:var(--muted)}
+
+/* hero */
+.hero{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:center;padding-block:22px 18px;border-bottom:1px solid var(--line)}
+.dayword{font:900 clamp(64px,19vw,112px)/.82 var(--display);letter-spacing:-.01em;text-transform:uppercase;margin:6px 0 10px}
+.dayword small{font-size:.36em;color:var(--dim);letter-spacing:.02em;margin-left:4px}
+.line{color:var(--muted);font-size:14px;max-width:34ch;text-wrap:balance;margin:0}
+.campaign{margin-top:14px;display:flex;flex-direction:column;gap:6px}
+.campaign .track{height:3px;background:var(--line2);position:relative}
+.campaign .track i{position:absolute;inset:0 auto 0 0;background:var(--ink)}
+.campaign .lbl{display:flex;justify-content:space-between}
+.rings{width:132px;height:132px}
+.ringkey{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.ringkey div{display:flex;align-items:center;gap:8px;font:500 12px var(--mono);color:var(--muted)}
+.ringkey b{color:var(--ink);font-weight:600}
+.ringkey i{width:8px;height:8px;border-radius:2px}
+
+/* tabs */
+.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);display:flex;gap:3px;padding-block:10px;border-bottom:1px solid var(--line);margin-bottom:18px}
+.tabs button{flex:1;min-width:0;height:38px;font:600 12px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);border-radius:8px}
+.tabs button[aria-selected="true"]{color:var(--bg);background:var(--ink)}
+.view{display:flex;flex-direction:column;gap:18px}
+[hidden]{display:none!important}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;min-width:0}
+.phead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:14px 16px 0;flex-wrap:wrap}
+.pbody{padding:12px 16px 16px;display:flex;flex-direction:column;gap:10px}
+h2{font:800 22px/1 var(--display);text-transform:uppercase;letter-spacing:.03em;margin:0}
+h3{font:800 17px/1 var(--display);text-transform:uppercase;letter-spacing:.04em;margin:0}
+.note{font-size:13px;color:var(--muted);margin:0}
+.btn{height:38px;padding:0 14px;border:1px solid var(--line2);border-radius:10px;font:600 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink);white-space:nowrap}
+.btn.solid{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn.sm{height:30px;padding:0 10px;font-size:11px}
+.field{height:38px;border:1px solid var(--line2);border-radius:10px;background:var(--raise);padding:0 10px;min-width:0}
+.field.mono{font-family:var(--mono)}
+
+/* date nav */
+.datenav{display:flex;align-items:center;gap:8px}
+.datenav .d{flex:1;text-align:center}
+.datenav .d b{display:block;font:800 20px/1.1 var(--display);text-transform:uppercase;letter-spacing:.04em}
+.navbtn{width:40px;height:40px;border:1px solid var(--line2);border-radius:10px;font-size:18px;color:var(--ink);flex:none}
+
+/* rows */
+.rows>div{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px 12px;align-items:center;padding:14px 16px;border-top:1px solid var(--line)}
+.rows>div:first-child{border-top:0}
+.rows .k{display:flex;align-items:center;gap:10px;min-width:0}
+.rows .k i{width:3px;height:30px;border-radius:2px;background:var(--line2);flex:none}
+.rows .k.on i{background:var(--c,var(--good))}
+.rows .k strong{display:block;font-weight:600}
+.rows .k span{display:block;font-size:12px;color:var(--muted)}
+.full{grid-column:1/-1;min-width:0}
+.tog{height:36px;min-width:86px;padding:0 14px;border:1px solid var(--line2);border-radius:18px;font:600 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.tog[aria-pressed="true"]{background:var(--c);border-color:var(--c);color:#050505}
+.inp{display:flex;align-items:center;gap:6px;min-width:0}
+.inp input{width:96px;height:38px;border:1px solid var(--line2);border-radius:10px;background:var(--raise);padding:0 10px;font:500 15px var(--mono);text-align:right}
+.inp input.w{width:100%;text-align:left;font:15px var(--body)}
+.inp em{font:12px var(--mono);font-style:normal;color:var(--dim);min-width:26px}
+.pair{display:flex;gap:8px;flex-wrap:wrap}
+.pair .inp{flex:1;min-width:120px}
+.pair .inp input{width:100%}
+textarea{width:100%;min-height:70px;border:1px solid var(--line2);border-radius:10px;background:var(--raise);padding:10px;font:14px/1.45 var(--body);resize:vertical}
+.big{font:800 34px/1 var(--display)}
+.stepper{display:flex;align-items:center;gap:6px}
+.stepper button{width:36px;height:36px;border:1px solid var(--line2);border-radius:10px;font-size:18px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--ink);padding:6px 10px;background:var(--raise);border:1px solid var(--line);border-radius:8px;max-width:100%}
+.chip span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip em{font:11px var(--mono);color:var(--dim);font-style:normal;flex:none}
+.chip button{color:var(--dim);font-size:15px;line-height:1;padding:0 2px}
+button.chip:hover{border-color:var(--line2)}
+.chip.add{border-style:dashed;color:var(--muted)}
+
+/* focus timer */
+.timer{display:grid;grid-template-columns:auto minmax(0,1fr);gap:16px;align-items:center;padding:16px}
+.clock{font:900 56px/.9 var(--display);font-variant-numeric:tabular-nums;letter-spacing:.01em}
+.clock.brk{color:var(--good)}
+.tctl{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:10px;overflow:hidden}
+.seg button{height:30px;padding:0 10px;font:600 11px var(--mono);color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+
+/* dsa */
+.dsahead{padding:18px 16px;display:flex;flex-direction:column;gap:12px}
+.dsabig{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.dsabig b{font:900 64px/.85 var(--display)}
+.dsabig span{font:800 26px/1 var(--display);color:var(--dim)}
+.meter{height:10px;background:var(--raise);border-radius:5px;overflow:hidden;display:flex}
+.meter i{background:var(--dsa)}
+.facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.facts div{min-width:0}
+.facts b{display:block;font:600 17px var(--mono)}
+.facts span{font-size:11.5px;color:var(--muted)}
+.plist{display:flex;flex-direction:column}
+.search{display:flex;gap:8px;flex-wrap:wrap}
+.search input{flex:1;min-width:180px;height:40px;border:1px solid var(--line2);border-radius:10px;background:var(--panel);padding:0 12px;font:15px var(--body)}
+.search .btn[aria-pressed="true"]{color:var(--bg);background:var(--ink);border-color:var(--ink)}
+.topic{overflow:hidden}
+.topic summary{list-style:none;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 12px;align-items:center;padding:14px 16px;cursor:pointer}
+.topic summary::-webkit-details-marker{display:none}
+.topic summary strong{font:800 19px/1 var(--display);text-transform:uppercase;letter-spacing:.03em}
+.topic summary .mono{font-size:13px;color:var(--muted)}
+.topic summary .tb{grid-column:1/-1;height:3px;background:var(--raise);border-radius:2px;overflow:hidden}
+.topic summary .tb i{display:block;height:100%;background:var(--c,var(--dsa))}
+.topic.done summary .tb i{background:var(--good)}
+.prob{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:9px 16px;border-top:1px solid var(--line)}
+.ck{appearance:none;width:22px;height:22px;border:1.5px solid var(--line2);border-radius:6px;margin:0;display:grid;place-items:center;cursor:pointer;background:var(--raise);flex:none}
+.ck:checked{background:var(--c,var(--dsa));border-color:var(--c,var(--dsa))}
+.ck:checked::after{content:"";width:9px;height:5px;border:2px solid #050505;border-top:0;border-right:0;transform:translateY(-1px) rotate(-45deg)}
+.prob .nm{min-width:0;text-align:left;font-size:14px;padding:4px 0;display:flex;align-items:center;gap:8px}
+.prob .nm span{min-width:0}
+.prob.on .nm span{color:var(--muted)}
+.tag{font:600 10px var(--mono);padding:2px 5px;border-radius:4px;border:1px solid var(--line2);color:var(--muted);flex:none}
+.tag.E{color:var(--good);border-color:color-mix(in oklab,var(--good) 40%,transparent)}
+.tag.M{color:var(--gym);border-color:color-mix(in oklab,var(--gym) 40%,transparent)}
+.tag.H{color:var(--bad);border-color:color-mix(in oklab,var(--bad) 40%,transparent)}
+.tag.hint{color:var(--move);border-color:color-mix(in oklab,var(--move) 40%,transparent)}
+.prob .r{display:flex;align-items:center;gap:6px}
+.prob em{font:11px var(--mono);color:var(--dim);font-style:normal}
+.prob a{color:var(--dim);font:11px var(--mono);text-decoration:none;padding:4px}
+.prob a:hover{color:var(--dsa)}
+.empty{padding:14px 16px;color:var(--muted);font-size:14px}
+
+/* sheet */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheet{width:100%;max-width:640px;max-height:88vh;overflow:auto;background:var(--panel);border:1px solid var(--line2);border-bottom:0;border-radius:16px 16px 0 0;padding:18px 16px calc(20px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px}
+.sheet .row2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.sheet label{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--muted)}
+.sheet .seg button{height:38px;padding:0 16px;font-size:13px}
+
+/* tiles + charts */
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;min-width:0}
+.tile b{display:block;font:900 44px/.9 var(--display);margin:8px 0 6px}
+.tile small{color:var(--muted);font-size:12px}
+.chart{padding:10px 12px 12px}
+.chart svg{display:block;width:100%;height:auto}
+.key{display:flex;gap:14px;flex-wrap:wrap;padding:0 16px 14px;font:11px var(--mono);color:var(--muted)}
+.key i{display:inline-block;width:14px;height:3px;vertical-align:middle;margin-right:6px;border-radius:2px}
+.grid88{display:grid;grid-template-columns:auto repeat(13,minmax(0,1fr));gap:4px;padding:12px 16px 16px}
+.grid88 .wd{font:10px var(--mono);color:var(--dim);display:flex;align-items:center}
+.grid88 button{aspect-ratio:1;max-width:100%;border-radius:3px;background:var(--raise);padding:0}
+.grid88 button.today{outline:1.5px solid var(--ink);outline-offset:1px}
+.grid88 .x{visibility:hidden}
+.list>div{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 16px;border-top:1px solid var(--line)}
+.list>div:first-child{border-top:0}
+.list i.dot{width:10px;height:10px;border-radius:50%;border:1.5px solid var(--line2)}
+.list .hit i.dot{background:var(--c);border-color:var(--c)}
+.list span{color:var(--muted);font-size:14px;min-width:0}
+.list .hit span{color:var(--ink)}
+.list em{font:12px var(--mono);font-style:normal;color:var(--dim)}
+.prs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:var(--line);border-top:1px solid var(--line);border-radius:0 0 14px 14px;overflow:hidden;margin-top:12px}
+.prs div{background:var(--panel);padding:12px 16px;min-width:0}
+.prs b{display:block;font:800 26px/1 var(--display);margin-top:6px}
+.prs small{font-size:11px;color:var(--dim)}
+
+/* report */
+.report{display:grid;grid-template-columns:auto minmax(0,1fr);gap:16px;align-items:center}
+.grade{font:900 96px/.8 var(--display);width:84px;text-align:center}
+.rstats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 14px;font-size:13px;color:var(--muted)}
+.rstats b{color:var(--ink);font:600 13px var(--mono)}
+
+/* run program */
+.stages{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:4px}
+.stages i{height:6px;border-radius:3px;background:var(--raise)}
+.stages i.on{background:var(--move)}
+.stages i.cur{background:var(--ink)}
+.lift{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.lift:first-child{border-top:0}
+.addlift{display:grid;grid-template-columns:minmax(0,1fr) 64px 64px 76px auto;gap:6px}
+@media (max-width:480px){.addlift{grid-template-columns:repeat(3,minmax(0,1fr))}.addlift .field:first-child{grid-column:1/-1}.addlift .btn{grid-column:1/-1}}
+
+/* companies */
+.co{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;padding:12px 16px;border-top:1px solid var(--line);align-items:center}
+.co strong{font-weight:600}
+.co small{color:var(--muted);font-size:12px;display:block}
+.co select{height:32px;border:1px solid var(--line2);border-radius:8px;background:var(--raise);padding:0 8px;font:600 12px var(--mono)}
+.st-Offer{color:var(--good)!important}.st-Rejected{color:var(--bad)!important}.st-Interview{color:var(--gym)!important}
+.cform{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+.cform .field:first-child{grid-column:1/-1}
+
+details.goals{padding:0 16px}
+details.goals>summary{padding:14px 0;cursor:pointer;font:800 18px var(--display);text-transform:uppercase;letter-spacing:.03em}
+.gform{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding-bottom:16px}
+.gform label{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--muted)}
+.gform input{height:38px;border:1px solid var(--line2);border-radius:10px;background:var(--raise);padding:0 10px;font:500 15px var(--mono);width:100%}
+.status{font:11px var(--mono);color:var(--dim);text-align:center;margin-top:22px;letter-spacing:.04em}
+@media (max-width:420px){.hero{grid-template-columns:1fr}.hero .r{display:flex;gap:16px;align-items:center}.ringkey{margin-top:0}.tabs button{font-size:11px;letter-spacing:.04em}}
+@media (prefers-reduced-motion:no-preference){.rings circle.arc{transition:stroke-dashoffset .6s cubic-bezier(.2,.7,.2,1)}.meter i,.topic .tb i,.campaign i{transition:width .5s ease}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="mark">Operation 88 <span>· Oct 5 → Dec 31</span></div>
+
+  <section class="hero">
+    <div>
+      <div class="eyebrow" id="heroEyebrow">Campaign</div>
+      <div class="dayword" id="dayword">Day 01</div>
+      <p class="line" id="mantra"></p>
+      <div class="campaign">
+        <div class="track"><i id="campBar" style="width:0%"></i></div>
+        <div class="lbl"><span class="eyebrow" id="campL"></span><span class="eyebrow" id="campR"></span></div>
+      </div>
+    </div>
+    <div class="r">
+      <svg class="rings" viewBox="0 0 132 132" aria-hidden="true" id="rings"></svg>
+      <div class="ringkey">
+        <div><i style="background:var(--dsa)"></i>DSA <b id="rkDsa">0/5</b></div>
+        <div><i style="background:var(--gym)"></i>GYM <b id="rkGym">—</b></div>
+        <div><i style="background:var(--move)"></i>MOVE <b id="rkMove">0%</b></div>
+      </div>
+    </div>
+  </section>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" aria-selected="true" data-v="today">Today</button>
+    <button role="tab" aria-selected="false" data-v="dsa">DSA</button>
+    <button role="tab" aria-selected="false" data-v="body">Body</button>
+    <button role="tab" aria-selected="false" data-v="prep">Prep</button>
+    <button role="tab" aria-selected="false" data-v="stats">Stats</button>
+  </nav>
+
+  <div class="datenav" id="datenav" style="margin-bottom:18px">
+    <button class="navbtn" id="prev" aria-label="Previous day">‹</button>
+    <div class="d"><b id="dTitle">Today</b><span class="eyebrow" id="dSub"></span></div>
+    <button class="navbtn" id="next" aria-label="Next day">›</button>
+  </div>
+
+  <!-- TODAY -->
+  <div class="view" id="v-today">
+    <div class="panel timer">
+      <div>
+        <div class="eyebrow" id="tLabel">Focus block</div>
+        <div class="clock" id="clock">25:00</div>
+      </div>
+      <div style="min-width:0">
+        <div class="seg" id="tPlan" role="group" aria-label="Timer length">
+          <button data-p="25-5" aria-pressed="true">25 / 5</button><button data-p="50-10" aria-pressed="false">50 / 10</button><button data-p="90-15" aria-pressed="false">90 / 15</button>
+        </div>
+        <div class="tctl"><button class="btn solid" id="tGo">Start</button><button class="btn" id="tReset">Reset</button></div>
+        <p class="note" id="tToday" style="margin-top:8px">0 focus minutes today</p>
+      </div>
+    </div>
+
+    <div class="panel rows">
+      <div>
+        <div class="k" id="k-dsa" style="--c:var(--dsa)"><i></i><div><strong>DSA problems</strong><span id="dsaHint">Tick them in the DSA tab</span></div></div>
+        <div class="big mono" id="dsaCount">0</div>
+        <div class="full chips" id="solvedToday"></div>
+        <div class="full" style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+          <span style="font-size:12px;color:var(--muted)">Solved something outside the list?</span>
+          <div class="stepper"><button id="exMinus" aria-label="One fewer extra problem">−</button><span class="mono" id="exVal" style="min-width:22px;text-align:center">0</span><button id="exPlus" aria-label="One more extra problem">+</button></div>
+        </div>
+      </div>
+      <div>
+        <div class="k" id="k-run" style="--c:var(--move)"><i></i><div><strong>Morning run</strong><span id="runHint">Level 1</span></div></div>
+        <button class="tog" id="runT" style="--c:var(--move)" aria-pressed="false">Not yet</button>
+        <div class="full pair" id="runSub" hidden><div class="inp"><input id="runMin" inputmode="numeric" placeholder="0"><em>min</em></div><div class="inp"><input id="runKm" inputmode="decimal" placeholder="0"><em>km</em></div></div>
+      </div>
+      <div>
+        <div class="k" id="k-gym" style="--c:var(--gym)"><i></i><div><strong>Gym</strong><span id="gymHint">Log lifts in the Body tab</span></div></div>
+        <button class="tog" id="gymT" style="--c:var(--gym)" aria-pressed="false">Not yet</button>
+        <div class="full" id="gymSub" hidden><div class="inp"><input class="w" id="gymWhat" placeholder="Session, e.g. back + biceps"></div></div>
+      </div>
+      <div>
+        <div class="k" id="k-steps" style="--c:var(--move)"><i></i><div><strong>Steps</strong><span id="stepsHint">Goal 10,000</span></div></div>
+        <div class="inp"><input id="steps" inputmode="numeric" placeholder="0"></div>
+      </div>
+      <div>
+        <div class="k" id="k-protein"><i></i><div><strong>Protein</strong><span id="proHint">Goal 140 g</span></div></div>
+        <div class="inp"><input id="protein" inputmode="numeric" placeholder="0"><em>g</em></div>
+      </div>
+      <div>
+        <div class="k" id="k-cal"><i></i><div><strong>Calories</strong><span id="calHint">Stay under 2,000</span></div></div>
+        <div class="inp"><input id="cal" inputmode="numeric" placeholder="0"><em>kcal</em></div>
+        <div class="full">
+          <div class="eyebrow" style="margin-bottom:8px">Quick add · adds to protein and calories</div>
+          <div class="chips" id="mealBtns"></div>
+          <div class="chips" id="mealsToday" style="margin-top:8px"></div>
+        </div>
+      </div>
+      <div>
+        <div class="k" id="k-sleep"><i></i><div><strong>Sleep</strong><span>7 hours or more</span></div></div>
+        <div class="inp"><input id="sleep" inputmode="decimal" placeholder="0"><em>hrs</em></div>
+      </div>
+      <div>
+        <div class="k" id="k-weight" style="--c:var(--ink)"><i></i><div><strong>Weigh-in</strong><span>Once a week, same morning</span></div></div>
+        <div class="inp"><input id="weight" inputmode="decimal" placeholder="—"><em>kg</em></div>
+      </div>
+      <div>
+        <div class="full"><strong>Notes</strong></div>
+        <div class="full"><textarea id="notes" placeholder="What went well. What to fix tomorrow."></textarea></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DSA -->
+  <div class="view" id="v-dsa" hidden>
+    <div class="panel dsahead">
+      <span class="eyebrow">DSA 300 checklist</span>
+      <div class="dsabig"><b class="mono" id="dsaDone">0</b><span>/ 300 solved</span></div>
+      <div class="meter" aria-hidden="true"><i id="dsaMeter" style="width:0%"></i></div>
+      <div class="facts">
+        <div><b id="fPace">—</b><span>per day to finish by Dec 31</span></div>
+        <div><b id="fAvg">—</b><span>your 7-day average</span></div>
+        <div><b id="fEta">—</b><span>finish date at that rate</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="phead"><h2>Revise</h2><span class="eyebrow" id="revHint">re-solve on day 3, 7 and 21</span></div>
+      <div class="plist" id="revList"></div>
+    </div>
+
+    <div class="panel">
+      <div class="phead"><h2>Up next</h2><span class="eyebrow" id="qHint">ticks log on today</span></div>
+      <div class="plist" id="queue" style="padding-top:8px"></div>
+    </div>
+
+    <div class="panel" id="redoPanel">
+      <div class="phead"><h2>Redo without hints</h2><span class="eyebrow" id="redoCount"></span></div>
+      <div class="plist" id="redoList" style="padding-top:8px"></div>
+    </div>
+
+    <p class="note">Tap a problem's name to set difficulty, time taken and whether you needed a hint.</p>
+    <div class="search">
+      <input id="q" type="search" placeholder="Search 300 problems" aria-label="Search problems">
+      <button class="btn" id="hideDone" aria-pressed="false">Hide solved</button>
+    </div>
+    <div id="topics" class="view" style="gap:10px"></div>
+  </div>
+
+  <!-- BODY -->
+  <div class="view" id="v-body" hidden>
+    <div class="panel">
+      <div class="phead"><h2>Run program</h2><span class="eyebrow" id="runLvl">Level 1 of 9</span></div>
+      <div class="pbody">
+        <div class="stages" id="stages"></div>
+        <div><div class="big" id="runPlan" style="font-size:28px">Jog 1 · walk 2 × 8</div><p class="note" id="runProg"></p></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn solid" id="lvlUp">Level up</button><button class="btn" id="lvlDown">Step back a level</button></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="phead"><h2>Workout</h2><span class="eyebrow" id="woDay"></span></div>
+      <div class="pbody">
+        <div id="lifts"></div>
+        <div class="addlift">
+          <input class="field" id="lEx" list="exList" placeholder="Exercise" aria-label="Exercise">
+          <input class="field mono" id="lSets" inputmode="numeric" placeholder="sets" aria-label="Sets">
+          <input class="field mono" id="lReps" inputmode="numeric" placeholder="reps" aria-label="Reps">
+          <input class="field mono" id="lKg" inputmode="decimal" placeholder="kg" aria-label="Weight in kg">
+          <button class="btn solid" id="lAdd">Add</button>
+        </div>
+        <datalist id="exList"></datalist>
+        <button class="btn" id="lCopy" style="align-self:flex-start">Copy last session</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="phead"><h2>Strength</h2><select class="field mono" id="liftPick" aria-label="Exercise to chart" style="height:32px;font-size:12px"></select></div>
+      <div class="chart"><svg id="lChart" viewBox="0 0 600 220" role="img" aria-label="Top weight per session for the chosen exercise"></svg></div>
+      <div class="prs" id="liftPRs" style="margin-top:0"></div>
+    </div>
+
+    <div class="panel">
+      <div class="phead"><h2>Measurements</h2><span class="eyebrow" id="msDue">every 2 weeks</span></div>
+      <div class="pbody">
+        <div class="pair">
+          <div class="inp"><input id="waist" inputmode="decimal" placeholder="waist"><em>cm</em></div>
+          <div class="inp"><input id="chest" inputmode="decimal" placeholder="chest"><em>cm</em></div>
+          <div class="inp"><input id="arm" inputmode="decimal" placeholder="arm"><em>cm</em></div>
+          <div class="inp"><input id="hips" inputmode="decimal" placeholder="hips"><em>cm</em></div>
+        </div>
+      </div>
+      <div class="chart" style="padding-top:0"><svg id="mChart" viewBox="0 0 600 200" role="img" aria-label="Measurements over time"></svg></div>
+      <div class="key"><span><i style="background:var(--ink)"></i>Waist</span><span><i style="background:var(--dsa)"></i>Chest</span><span><i style="background:var(--gym)"></i>Arm</span><span><i style="background:var(--move)"></i>Hips</span></div>
+    </div>
+  </div>
+
+  <!-- PREP -->
+  <div class="view" id="v-prep" hidden>
+    <div class="panel dsahead">
+      <span class="eyebrow">Aptitude, CS core and HR</span>
+      <div class="dsabig"><b class="mono" id="prepDone">0</b><span id="prepTot">/ 0 topics</span></div>
+      <div class="meter" aria-hidden="true"><i id="prepMeter" style="width:0%;background:var(--gym)"></i></div>
+    </div>
+    <div id="prepList" class="view" style="gap:10px"></div>
+
+    <div class="panel">
+      <div class="phead"><h2>Companies</h2><span class="eyebrow" id="coCount"></span></div>
+      <div class="pbody">
+        <div class="cform">
+          <input class="field" id="cName" placeholder="Company" aria-label="Company name">
+          <input class="field" id="cRole" placeholder="Role" aria-label="Role">
+          <input class="field mono" id="cDate" type="date" aria-label="Drive date">
+        </div>
+        <button class="btn solid" id="cAdd" style="align-self:flex-start">Add company</button>
+      </div>
+      <div id="coList"></div>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="view" id="v-stats" hidden>
+    <div class="tiles">
+      <div class="tile"><span class="eyebrow">Streak</span><b class="mono" id="tStreak">0</b><small>days with DSA goal, gym and a run or full steps</small></div>
+      <div class="tile"><span class="eyebrow">Weight lost</span><b class="mono" id="tLost">0.0</b><small id="tLostSub">kg</small></div>
+      <div class="tile"><span class="eyebrow">DSA solved</span><b class="mono" id="tDsa">0</b><small id="tDsaSub">from the 300 list plus extras</small></div>
+      <div class="tile"><span class="eyebrow">Gym sessions</span><b class="mono" id="tGym">0</b><small id="tGymSub">target 6 a week</small></div>
+    </div>
+
+    <div class="panel">
+      <div class="phead"><h2>Week report</h2>
+        <div style="display:flex;gap:6px;align-items:center"><button class="navbtn" id="wkPrev" aria-label="Previous week" style="width:32px;height:32px">‹</button><span class="eyebrow" id="wkLbl"></span><button class="navbtn" id="wkNext" aria-label="Next week" style="width:32px;height:32px">›</button></div>
+      </div>
+      <div class="pbody">
+        <div class="report"><div class="grade" id="grade">—</div><div class="rstats" id="rstats"></div></div>
+        <p class="note" id="rFix"></p>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="phead"><h2>Personal records</h2></div>
+      <div class="prs" id="prs"></div>
+    </div>
+
+    <div class="panel">
+      <div class="phead"><h2>The 88 days</h2><span class="eyebrow">habits hit per day</span></div>
+      <div class="grid88" id="grid88"></div>
+    </div>
+
+    <div class="panel">
+      <div class="phead"><h2>Weight path</h2><span class="eyebrow" id="wNow">kg</span></div>
+      <div class="chart"><svg id="wChart" viewBox="0 0 600 250" role="img" aria-label="Weigh-ins against the target path"></svg></div>
+      <div class="key"><span><i style="background:var(--ink)"></i>You</span><span><i style="background:var(--dim)"></i>Target path</span><span><i style="background:var(--gym)"></i>Stretch</span></div>
+    </div>
+
+    <div class="panel">
+      <div class="phead"><h2>DSA climb</h2><span class="eyebrow" id="cNow">0 / 300</span></div>
+      <div class="chart"><svg id="cChart" viewBox="0 0 600 250" role="img" aria-label="Problems solved over time against the pace needed"></svg></div>
+      <div class="key"><span><i style="background:var(--dsa)"></i>Solved</span><span><i style="background:var(--dim)"></i>300 by Dec 31</span><span><i style="background:var(--line2)"></i>5 a day</span></div>
+    </div>
+
+    <div class="panel">
+      <div class="phead"><h2>Topic strength</h2><span class="eyebrow">% of each topic solved</span></div>
+      <div class="chart"><svg id="radar" viewBox="0 0 420 400" role="img" aria-label="Share of each topic solved, and solved without hints"></svg></div>
+      <div class="key"><span><i style="background:var(--dsa)"></i>Solved</span><span><i style="background:var(--good)"></i>Solved without hints</span></div>
+    </div>
+
+    <div class="panel">
+      <div class="phead"><h2>Speed</h2><span class="eyebrow">avg minutes per problem, by week</span></div>
+      <div class="chart"><svg id="tChart" viewBox="0 0 600 220" role="img" aria-label="Average minutes per problem by week and difficulty"></svg></div>
+      <div class="key"><span><i style="background:var(--good)"></i>Easy</span><span><i style="background:var(--gym)"></i>Medium</span><span><i style="background:var(--bad)"></i>Hard</span></div>
+    </div>
+
+    <div class="panel">
+      <div class="phead"><h2>Steps, 14 days</h2><span class="eyebrow" id="sAvg">avg —</span></div>
+      <div class="chart"><svg id="sChart" viewBox="0 0 600 200" role="img" aria-label="Daily steps for the last 14 days"></svg></div>
+    </div>
+
+    <div class="panel">
+      <div class="phead"><h2>Milestones</h2><span class="eyebrow" id="mCount"></span></div>
+      <div class="list" id="miles" style="padding-top:8px"></div>
+    </div>
+
+    <div class="panel">
+      <div class="phead"><h2>Backup</h2><span class="eyebrow">your data lives on this phone</span></div>
+      <div class="pbody">
+        <p class="note" id="bMsg"></p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn solid" id="bExport">Export backup</button>
+          <label class="btn" for="bImport" style="display:inline-flex;align-items:center;cursor:pointer">Restore from file</label>
+          <input type="file" id="bImport" accept="application/json,.json" hidden>
+        </div>
+      </div>
+    </div>
+
+    <details class="panel goals">
+      <summary>Goals and meal buttons</summary>
+      <div class="gform">
+        <label for="gStart">Starting weight (kg)<input id="gStart" inputmode="decimal"></label>
+        <label for="gTarget">Dec 31 target (kg)<input id="gTarget" inputmode="decimal"></label>
+        <label for="gStretch">Stretch goal (kg)<input id="gStretch" inputmode="decimal"></label>
+        <label for="gDsa">DSA a day<input id="gDsa" inputmode="numeric"></label>
+        <label for="gSteps">Steps a day<input id="gSteps" inputmode="numeric"></label>
+        <label for="gProtein">Protein a day (g)<input id="gProtein" inputmode="numeric"></label>
+        <label for="gCal">Calorie cap (kcal)<input id="gCal" inputmode="numeric"></label>
+      </div>
+      <div class="eyebrow" style="margin-bottom:8px">Meal buttons · tap × to remove</div>
+      <div class="chips" id="mealLib"></div>
+      <div class="cform" style="margin:10px 0 16px;grid-template-columns:minmax(0,1fr) 70px 80px auto">
+        <input class="field" id="mName" placeholder="Meal" aria-label="Meal name" style="grid-column:auto">
+        <input class="field mono" id="mP" inputmode="numeric" placeholder="g" aria-label="Protein grams">
+        <input class="field mono" id="mK" inputmode="numeric" placeholder="kcal" aria-label="Calories">
+        <button class="btn" id="mAdd">Add</button>
+      </div>
+    </details>
+  </div>
+
+  <p class="status" id="status">SAVED ON THIS DEVICE</p>
+</div>
+
+<div class="scrim" id="scrim" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="shTitle">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+      <div style="min-width:0"><span class="eyebrow" id="shTopic"></span><h2 id="shTitle" style="margin-top:6px"></h2></div>
+      <button class="navbtn" id="shClose" aria-label="Close">×</button>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <button class="btn" id="shSolve"></button>
+      <a class="btn" id="shLink" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;text-decoration:none">Find on LeetCode ↗</a>
+    </div>
+    <div class="row2">
+      <label>Difficulty<span class="seg" id="shDiff" role="group" aria-label="Difficulty"><button data-v="E" aria-pressed="false">Easy</button><button data-v="M" aria-pressed="false">Med</button><button data-v="H" aria-pressed="false">Hard</button></span></label>
+      <label for="shMin">Minutes taken<input class="field mono" id="shMin" inputmode="numeric" placeholder="0"></label>
+      <label for="shDate">Solved on<input class="field mono" id="shDate" type="date"></label>
+      <label>Needed a hint?<button class="tog" id="shHint" style="--c:var(--move);align-self:flex-start" aria-pressed="false">No</button></label>
+    </div>
+    <label for="shNote">Notes: key idea, edge cases<textarea id="shNote" placeholder="e.g. two pointers from both ends, skip duplicates"></textarea></label>
+    <p class="note" id="shRev"></p>
+  </div>
+</div>
+
+<script>
+const TOPICS = [["Arrays", ["Two Sum", "Best Time to Buy and Sell Stock", "Contains Duplicate", "Move Zeroes", "Single Number", "Missing Number", "Remove Duplicates from Sorted Array", "Plus One", "Merge Sorted Array", "Rotate Array", "Majority Element II", "Maximum Subarray (Kadane's)", "Sort Colors", "Next Permutation", "Merge Intervals", "Insert Interval", "Set Matrix Zeroes", "Spiral Matrix", "Rotate Image", "Product of Array Except Self", "Subarray Sum Equals K", "Longest Consecutive Sequence", "3Sum", "4Sum", "Container With Most Water", "Trapping Rain Water", "Jump Game I & II", "Maximum Product Subarray", "Find All Duplicates in Array", "Gas Station", "Candy", "Rotate Matrix 180°", "Count Inversions", "Stock Buy/Sell Multiple Transactions", "Kth Largest Element"]], ["Strings", ["Valid Anagram", "Valid Palindrome", "Reverse String", "Longest Common Prefix", "First Unique Character", "Roman to Integer", "Length of Last Word", "Longest Substring Without Repeating", "Longest Repeating Character Replacement", "Group Anagrams", "Minimum Window Substring", "Palindromic Substrings", "Longest Palindromic Substring", "String to Integer (atoi)", "Zigzag Conversion", "Implement strStr() / KMP", "Rabin-Karp Algorithm", "Z-Algorithm", "Minimum Bracket Reversals", "Compare Version Numbers", "Count and Say", "Encode and Decode Strings", "Isomorphic Strings", "Word Break", "Palindrome Partitioning", "Edit Distance", "Shortest Palindrome", "String Compression", "Permutations of a String", "Anagram Substring Search"]], ["Linked List", ["Reverse Linked List", "Merge Two Sorted Lists", "Delete Node in Linked List", "Linked List Cycle (Detection)", "Palindrome Linked List", "Remove Duplicates from Sorted List", "Middle of Linked List", "Linked List Cycle II", "Remove Nth Node From End", "Add Two Numbers", "Reorder List", "Copy List with Random Pointer", "Flatten Multilevel Doubly Linked List", "Sort List (Merge Sort)", "Insertion Sort List", "Intersection of Two Linked Lists", "Rotate List", "Swap Nodes in Pairs", "Reverse Linked List II", "Odd Even Linked List", "Merge K Sorted Lists", "Remove Duplicates II", "Flattening a Linked List", "Clone with Random Pointer", "Add One to Linked List"]], ["Stacks & Queues", ["Valid Parentheses", "Stack using Queues", "Queue using Stacks", "Min Stack", "MyQueue Implementation", "Next Greater Element I & II", "Daily Temperatures", "Largest Rectangle in Histogram", "Trapping Rain Water (Stack)", "Evaluate Reverse Polish Notation", "Remove K Digits", "Sum of Subarray Minimums", "Asteroid Collision", "Simplify Path", "Decode String", "Car Fleet", "Circular Queue", "Implement Deque", "Sliding Window Maximum", "Stock Span Problem", "Online Stock Span", "Min Stack O(1)", "Infix to Postfix", "Postfix Evaluation", "LRU Cache"]], ["Binary Trees", ["Maximum Depth", "Invert Binary Tree", "Same Tree", "Symmetric Tree", "Balanced Binary Tree", "Diameter of Binary Tree", "Merge Two Binary Trees", "Level Order Traversal", "Zigzag Level Order", "Right Side View", "Construct from Preorder & Inorder", "Construct from Inorder & Postorder", "Serialize & Deserialize", "LCA of Binary Tree", "Kth Smallest in BST", "Path Sum I & II", "Maximum Path Sum", "Count Complete Tree Nodes", "Populating Next Right Pointers", "Top View", "Bottom View", "Left View", "Vertical Order Traversal", "Flatten to Linked List", "Boundary Traversal", "Zigzag Boundary", "Validate BST", "Kth Ancestor", "Duplicate Subtrees", "Sum Root to Leaf Numbers"]], ["BST", ["Search in BST", "Insert into BST", "Delete Node in BST", "LCA of BST", "Sorted Array to Balanced BST", "BST to Sorted DLL", "Two Sum IV", "Kth Smallest Element", "Recover BST", "Validate BST", "Floor and Ceil", "Inorder Successor/Predecessor", "BST from Preorder", "BST from Preorder O(1) space", "Merge Two BSTs"]], ["Heaps", ["Kth Largest in Stream", "Last Stone Weight", "K Closest Points", "Kth Largest in Array", "Task Scheduler", "Merge K Lists (Heap)", "Find Median from Data Stream", "Top K Frequent Elements", "Sort Characters by Frequency", "Sliding Window Median", "Reorganize String", "Connect N Ropes", "K Most Frequent Words", "IPO", "Min Heap to Max Heap"]], ["Binary Search", ["Binary Search", "Search Insert Position", "First & Last Position", "Search in Rotated Array", "Min in Rotated Array", "Find Peak Element", "Search 2D Matrix I & II", "Median of Two Sorted Arrays", "Koko Eating Bananas", "Split Array Largest Sum", "Allocate Min Pages", "Aggressive Cows", "Book Allocation", "Square Root", "Single Element in Sorted Array", "Missing Element in Sorted Array", "Nth Root of Number", "Median of Sorted Matrix", "Kth Element of Two Sorted Arrays", "Min Days for M Bouquets"]], ["Dynamic Programming", ["Climbing Stairs", "House Robber I & II", "Coin Change I", "Coin Change II", "Jump Game (DP)", "Maximum Subarray", "Longest Increasing Subsequence", "Count LIS", "Perfect Squares", "Word Break", "Decode Ways", "Partition Equal Subset Sum", "Target Sum", "Unique Paths I & II", "Minimum Path Sum", "Longest Common Subsequence", "Longest Common Substring", "Edit Distance", "Minimum Cost Path", "0/1 Knapsack", "Unbounded Knapsack", "Rod Cutting", "Palindromic Substrings", "Longest Palindromic Subsequence", "Min Insertions for Palindrome", "Burst Balloons", "Regex Matching", "Wildcard Matching", "Matrix Chain Multiplication", "Longest Increasing Path", "Dungeon Game", "Russian Doll Envelopes", "Maximal Square", "Cherry Pickup", "Egg Drop"]], ["Graphs", ["Number of Islands", "Clone Graph", "Course Schedule I & II", "Rotting Oranges", "Flood Fill", "Bipartite Check", "Cycle in Undirected Graph", "Cycle in Directed Graph", "Number of Provinces", "Word Ladder", "Alien Dictionary", "Dijkstra's Algorithm", "Bellman-Ford", "Floyd-Warshall", "MST (Prim's & Kruskal's)", "Union-Find", "Connected Components", "Surrounded Regions", "Pacific Atlantic Water Flow", "Cheapest Flights Within K Stops", "Bipartite Graph", "Strongly Connected Components (Kosaraju)", "Bridge & Articulation Points", "Maximum Bipartite Matching", "Shortest Path in DAG"]], ["Backtracking", ["Subsets", "Subsets II (with Duplicates)", "Permutations", "Permutations II (with Duplicates)", "Combination Sum", "Combination Sum II", "N-Queens", "Sudoku Solver", "Word Search", "Letter Combinations of a Phone Number", "Generate Parentheses", "Restore IP Addresses"]], ["Tries", ["Implement Trie (Prefix Tree)", "Word Search II", "Longest Word in Dictionary", "Design Add and Search Words Data Structure", "Replace Words", "Maximum XOR of Two Numbers in an Array", "Word Break II (Trie-based)", "Prefix and Suffix Search"]], ["Bit Manipulation", ["Single Number II", "Single Number III", "Counting Bits", "Number of 1 Bits (Hamming Weight)", "Power of Two", "Power of Four", "Reverse Bits", "Sum of Two Integers (without + or -)", "Bitwise AND of Numbers Range", "Subset Generation via Bitmask"]], ["Greedy", ["Assign Cookies", "Lemonade Change", "Non-overlapping Intervals", "Minimum Number of Arrows to Burst Balloons", "Partition Labels", "Queue Reconstruction by Height", "Job Sequencing Problem", "Fractional Knapsack", "Minimum Platforms", "Boats to Save People"]], ["Math & Number Theory", ["GCD and LCM", "Sieve of Eratosthenes", "Power Function (Fast Exponentiation)", "Count Primes", "Factorial Trailing Zeroes"]]];
+const PREP = [
+  ["Quant", ["Number system","HCF & LCM","Percentages","Profit & loss","Simple & compound interest","Ratio & proportion","Averages","Problems on ages","Time & work","Pipes & cisterns","Time, speed & distance","Boats & streams","Trains","Mixtures & alligation","Permutations & combinations","Probability","Mensuration","Data interpretation"]],
+  ["Logical reasoning", ["Number series","Letter series","Coding-decoding","Blood relations","Direction sense","Seating arrangement","Puzzles","Syllogisms","Data sufficiency","Clocks & calendars","Statement & conclusion"]],
+  ["Verbal", ["Reading comprehension","Sentence correction","Fill in the blanks","Para jumbles","Synonyms & antonyms","Error spotting"]],
+  ["DBMS + SQL", ["ER model","Keys","Normalization (1NF to BCNF)","SQL joins","Subqueries, GROUP BY, HAVING","Indexing","Transactions & ACID","Concurrency control","Deadlocks in databases","SQL vs NoSQL"]],
+  ["Operating systems", ["Processes vs threads","CPU scheduling","Synchronization & semaphores","Deadlocks","Memory management & paging","Virtual memory & page replacement","File systems","System calls"]],
+  ["Computer networks", ["OSI & TCP/IP models","TCP vs UDP","IP addressing & subnetting","DNS","HTTP & HTTPS","What happens when you type a URL","Routing basics","Sockets"]],
+  ["OOP", ["Classes & objects","Encapsulation","Inheritance","Polymorphism","Abstraction","Interfaces vs abstract classes","SOLID principles","Design pattern basics"]],
+  ["HR + resume", ["Tell me about yourself","Project deep-dive: Sentinel Rover AI","Project deep-dive: Haptic Navigation Belt","Strengths & weaknesses","Why this company","Final resume review","Mock interview"]]
+];
+const START = "2026-10-05", END = "2026-12-31";
+const DEFAULTS = {start:101.2, target:87, stretch:81, dsa:5, steps:10000, protein:140, cal:2000, runStage:1, levelAt:null, meals:[
+  {n:"3 boiled eggs",p:18,k:210},{n:"Egg bhurji (3 eggs)",p:19,k:280},{n:"Paneer 100 g",p:18,k:265},{n:"Soya chunks 50 g",p:26,k:170},
+  {n:"Dal, 1 bowl",p:9,k:150},{n:"Curd 200 g",p:7,k:120},{n:"Whey, 1 scoop",p:24,k:120},{n:"Roti",p:3,k:100},{n:"Rice, 1 cup",p:4,k:200}]};
+const RUN = [
+  ["Jog 1 · walk 2 × 8","24 min"],["Jog 1.5 · walk 1.5 × 8","24 min"],["Jog 2 · walk 1 × 8","24 min"],["Jog 3 · walk 1 × 6","24 min"],
+  ["Jog 5 · walk 1 × 4","24 min"],["Jog 8 · walk 1 × 3","27 min"],["Jog 12 · walk 1 × 2","26 min"],["Run 25 min nonstop","25 min"],["Run 30 min nonstop","30 min"]];
+const RUNS_TO_LEVEL = 4;
+const EXERCISES = ["Bench press","Incline dumbbell press","Chest fly","Lat pulldown","Seated cable row","Barbell row","Deadlift","Romanian deadlift","Squat","Leg press","Leg curl","Leg extension","Shoulder press","Lateral raise","Bicep curl","Hammer curl","Tricep pushdown","Overhead tricep extension","Cable crunch","Hanging leg raise","Russian twist","Plank"];
+const MANTRAS = [
+  "Five problems. Two hours of iron. No negotiating with yourself.",
+  "Today's reps are next month's offer letter.",
+  "Nobody is watching. That's exactly why it counts.",
+  "Small numbers every day beat big numbers once.",
+  "The scale moves slowly. The streak doesn't have to.",
+  "Code before comfort. Iron before excuses.",
+  "Discipline is a schedule you keep when you don't feel like it.",
+  "One more problem than yesterday's excuse.",
+  "Finish the day you started.",
+  "December you is watching October you. Make him proud.",
+  "Hard problems are just easy problems you haven't met yet.",
+  "Show up tired. Show up anyway."
+];
+const REV_GAPS = [3, 7, 21];
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+// ---------- data ----------
+const slug = s => s.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+const PROBS = []; const PBY = {};
+TOPICS.forEach(([t, items], ti) => items.forEach(name => { const p = {id: slug(t)+"/"+slug(name), t, ti, name}; PROBS.push(p); PBY[p.id] = p; }));
+const TOTAL = PROBS.length;
+const PREPS = []; PREP.forEach(([t, items], ti) => items.forEach(name => PREPS.push({id: slug(t)+"/"+slug(name), t, ti, name})));
+const lcLink = p => "https://leetcode.com/problemset/?search=" + encodeURIComponent(p.name.replace(/\(.*?\)/g,"").trim());
+
+// ---------- dates ----------
+const pad = n => String(n).padStart(2,"0");
+const iso = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const parse = s => { const [y,m,d] = s.split("-").map(Number); return new Date(y,m-1,d); };
+const addDays = (s,n) => { const d = parse(s); d.setDate(d.getDate()+n); return iso(d); };
+const diff = (a,b) => Math.round((parse(b)-parse(a))/864e5);
+const TODAY = iso(new Date());
+const fmt = (s,o={day:"numeric",month:"short"}) => parse(s).toLocaleDateString("en-IN",o);
+const SPAN = diff(START, END) + 1;
+const weekStart = s => addDays(s, -((parse(s).getDay()+6)%7));
+
+// ---------- storage ----------
+function lsGet(k,f){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : f; }catch(e){ return f; } }
+function lsSet(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+let db = null, uid = null;
+const setStatus = t => $("status").textContent = t.toUpperCase();
+const isObj = v => v && typeof v === "object" && !Array.isArray(v);
+
+// One synced document: local copy first, then the account copy once connected.
+function docStore(key, path, init0){
+  const ser = JSON.stringify(init0), init = JSON.parse(ser);
+  const fresh = () => JSON.parse(ser);
+  const s = {data: {...fresh(), ...lsGet(key, {})}, dirty:false, timer:null, inflight:Promise.resolve()};
+  s.save = () => {
+    lsSet(key, s.data); s.dirty = true;
+    if (!db) return setStatus("Saved on this device");
+    clearTimeout(s.timer); setStatus("Saving…");
+    s.timer = setTimeout(async () => {
+      await s.inflight;
+      const body = JSON.parse(JSON.stringify(s.data));
+      s.inflight = db.doc(path()).set(body)
+        .then(() => { if (JSON.stringify(s.data) === JSON.stringify(body)) s.dirty = false; setStatus("Synced to your account"); })
+        .catch(() => setStatus("Couldn't sync. Kept on this device"));
+    }, 500);
+  };
+  s.connect = () => {
+    let first = true;
+    db.doc(path()).onSnapshot(snap => {
+      const remote = snap.exists ? snap.data() : null;
+      if (first) {
+        first = false;
+        if (!remote) { if (s.dirty || Object.keys(lsGet(key, {})).length) s.save(); return; }
+        if (s.dirty) {
+          const merged = fresh();
+          for (const k of new Set([...Object.keys(remote), ...Object.keys(s.data)]))
+            merged[k] = isObj(remote[k]) && isObj(s.data[k]) ? {...remote[k], ...s.data[k]} : (k in s.data ? s.data[k] : remote[k]);
+          s.data = merged; s.save(); render(); return;
+        }
+      }
+      if (remote && !s.dirty) { s.data = {...fresh(), ...JSON.parse(JSON.stringify(remote))}; lsSet(key, s.data); render(); }
+    }, () => setStatus("Lost connection. Kept on this device"));
+  };
+  return s;
+}
+// migrate earlier local keys
+const legacySolved = lsGet("op88.solved", null);
+const G = docStore("op88.goals", () => `data/users/${uid}/meta/goals`, JSON.parse(JSON.stringify(DEFAULTS)));
+const D = docStore("op88.dsa", () => `data/users/${uid}/meta/dsa`, {solved: legacySolved || {}, rev:{}, pm:{}});
+const P = docStore("op88.prep", () => `data/users/${uid}/meta/prep`, {done:{}, companies:[]});
+const goals = () => G.data;
+const solved = () => D.data.solved;
+
+let days = lsGet("op88.days", {});
+const dirty = new Set(); const timers = {}, inflight = {};
+const entry = d => days[d] || {};
+const num = v => (v === "" || v == null || isNaN(+v)) ? null : +v;
+function editDay(d, patch){
+  days[d] = {...entry(d), ...patch, date: d};
+  lsSet("op88.days", days); dirty.add(d); queueDay(d); render();
+}
+function queueDay(d){
+  if (!db) return setStatus("Saved on this device");
+  clearTimeout(timers[d]); setStatus("Saving…");
+  timers[d] = setTimeout(async () => {
+    await (inflight[d] || Promise.resolve());
+    const body = JSON.parse(JSON.stringify(days[d]));
+    inflight[d] = db.collection(`data/users/${uid}/days`).doc(d).set(body)
+      .then(() => { if (JSON.stringify(days[d]) === JSON.stringify(body)) dirty.delete(d); setStatus("Synced to your account"); })
+      .catch(() => setStatus("Couldn't sync. Kept on this device"));
+  }, 600);
+}
+
+// ---------- derived ----------
+let sel = TODAY;
+let view = lsGet("op88.view", "today");
+const edit = patch => editDay(sel, patch);
+const solvedOn = d => PROBS.filter(p => solved()[p.id] === d);
+const dsaCount = d => solvedOn(d).length + (entry(d).dsaExtra || 0);
+const solvedCountByDate = () => { const m = {}, s = solved(); for (const k in s) m[s[k]] = (m[s[k]]||0)+1; return m; };
+function habits(d){
+  const e = entry(d), g = goals();
+  return { dsa: dsaCount(d) >= g.dsa, run: !!e.run, gym: !!e.gym, steps: (e.steps||0) >= g.steps,
+    protein: (e.protein||0) >= g.protein, cal: e.cal > 0 && e.cal <= g.cal, sleep: (e.sleep||0) >= 7 };
+}
+const score = d => Object.values(habits(d)).filter(Boolean).length;
+const coreDay = d => { const h = habits(d); return h.dsa && h.gym && (h.run || h.steps); };
+function streakEnding(d){ let n = 0; while (d >= START && coreDay(d)) { n++; d = addDays(d,-1); } return n; }
+const currentStreak = () => streakEnding(coreDay(TODAY) ? TODAY : addDays(TODAY,-1));
+function bestStreak(){ let best = 0, run = 0; for (let d = START; d <= TODAY && d <= END; d = addDays(d,1)) { run = coreDay(d) ? run+1 : 0; best = Math.max(best, run); } return best; }
+function nextRev(id){
+  const sd = solved()[id]; if (!sd) return null;
+  const k = (D.data.rev[id] || []).length; if (k >= REV_GAPS.length) return null;
+  return addDays(sd, REV_GAPS[k]);
+}
+const runsAtStage = () => { const g = goals(); return Object.values(days).filter(e => e.run && (e.runStage||1) === g.runStage && (!g.levelAt || e.date >= g.levelAt)).length; };
+
+// ---------- render ----------
+function render(){
+  renderHero(); renderNav();
+  if (view === "today") renderToday();
+  if (view === "dsa") renderDsa();
+  if (view === "body") renderBody();
+  if (view === "prep") renderPrep();
+  if (view === "stats") renderStats();
+}
+function setVal(id, v){ const el = $(id); if (document.activeElement !== el) el.value = v ?? ""; }
+function tog(btn, sub, on){ $(btn).setAttribute("aria-pressed", on); $(btn).textContent = on ? "Done" : "Not yet"; if (sub) $(sub).hidden = !on; }
+
+function renderHero(){
+  const n = diff(START, TODAY) + 1, g = goals();
+  if (n < 1){ $("heroEyebrow").textContent = "Starts tomorrow"; $("dayword").innerHTML = `T−${1-n}<small>day${1-n>1?"s":""}</small>`; }
+  else if (n > SPAN){ $("heroEyebrow").textContent = "Campaign complete"; $("dayword").innerHTML = `Day 88`; }
+  else { $("heroEyebrow").textContent = `${SPAN - n} days left`; $("dayword").innerHTML = `Day ${pad(n)}<small>/88</small>`; }
+  $("mantra").textContent = MANTRAS[((n % MANTRAS.length) + MANTRAS.length) % MANTRAS.length];
+  $("campBar").style.width = `${Math.max(0, Math.min(100, (n-1)/SPAN*100))}%`;
+  $("campL").textContent = fmt(START); $("campR").textContent = fmt(END);
+  const e = entry(TODAY), c = dsaCount(TODAY);
+  const move = e.run ? 1 : Math.min(1, (e.steps||0)/g.steps);
+  const parts = [[56, Math.min(1, c/g.dsa), "--dsa"], [43, e.gym ? 1 : 0, "--gym"], [30, move, "--move"]];
+  $("rings").innerHTML = parts.map(([r, p, col]) => { const C = 2*Math.PI*r;
+    return `<circle cx="66" cy="66" r="${r}" fill="none" stroke="var(--raise)" stroke-width="10"/><circle class="arc" cx="66" cy="66" r="${r}" fill="none" stroke="var(${col})" stroke-width="10" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C*(1-p)}" transform="rotate(-90 66 66)" ${p===0?'opacity="0"':''}/>`; }).join("");
+  $("rkDsa").textContent = `${c}/${g.dsa}`; $("rkGym").textContent = e.gym ? "DONE" : "—"; $("rkMove").textContent = e.run ? "RAN" : `${Math.round(move*100)}%`;
+}
+function renderNav(){
+  $("datenav").hidden = !(view === "today" || view === "body");
+  const rel = sel === TODAY ? "Today" : sel === addDays(TODAY,-1) ? "Yesterday" : sel === addDays(TODAY,1) ? "Tomorrow" : fmt(sel,{weekday:"long"});
+  $("dTitle").textContent = rel;
+  const dn = diff(START, sel) + 1;
+  $("dSub").textContent = `${fmt(sel,{weekday:"short",day:"numeric",month:"short"})}${dn>=1&&dn<=SPAN?` · day ${dn}`:""} · ${score(sel)}/7 habits`;
+  $("next").disabled = sel >= addDays(TODAY,1);
+}
+
+function renderToday(){
+  const e = entry(sel), h = habits(sel), g = goals();
+  const list = solvedOn(sel);
+  $("dsaCount").textContent = dsaCount(sel);
+  $("dsaHint").textContent = `Goal ${g.dsa} · tick them in the DSA tab`;
+  $("solvedToday").innerHTML = list.length ? list.map(p => `<button class="chip" data-open="${p.id}"><span>${esc(p.name)}</span><em>${esc(p.t)}</em></button>`).join("")
+    : `<span style="font-size:13px;color:var(--dim)">Nothing ticked for this day yet.</span>`;
+  $("exVal").textContent = e.dsaExtra || 0;
+  tog("runT","runSub", !!e.run); tog("gymT","gymSub", !!e.gym);
+  $("runHint").textContent = `Level ${e.run && e.runStage ? e.runStage : g.runStage}: ${RUN[(e.run && e.runStage ? e.runStage : g.runStage)-1][0]}`;
+  $("gymHint").textContent = (e.lifts||[]).length ? `${e.lifts.length} exercise${e.lifts.length>1?"s":""} logged in Body` : "Log lifts in the Body tab";
+  ["runMin","runKm","gymWhat","steps","protein","cal","sleep","weight","notes"].forEach(k => setVal(k, e[k]));
+  $("stepsHint").textContent = `Goal ${g.steps.toLocaleString("en-IN")}`;
+  $("proHint").textContent = `Goal ${g.protein} g`;
+  $("calHint").textContent = `Stay under ${g.cal.toLocaleString("en-IN")}`;
+  for (const k of ["dsa","run","gym","steps","protein","cal","sleep"]) $("k-"+k).classList.toggle("on", h[k]);
+  $("k-weight").classList.toggle("on", !!e.weight);
+  $("mealBtns").innerHTML = g.meals.map((m,i) => `<button class="chip" data-meal="${i}"><span>${esc(m.n)}</span><em>${m.p}g · ${m.k}</em></button>`).join("") || `<span class="note">Add meal buttons under Stats → Goals.</span>`;
+  $("mealsToday").innerHTML = (e.meals||[]).map((m,i) => `<span class="chip"><span>${esc(m.n)}</span><em>+${m.p}g</em><button data-unmeal="${i}" aria-label="Remove ${esc(m.n)}">×</button></span>`).join("");
+  renderTimer();
+}
+
+// ---------- focus timer ----------
+let T = lsGet("op88.timer", {plan:"25-5", phase:"focus", endsAt:null, left:null});
+let tick = null, audio = null;
+const planMins = () => T.plan.split("-").map(Number);
+function tLeft(){ if (T.endsAt) return Math.max(0, T.endsAt - Date.now()); if (T.left != null) return T.left; const [f,b] = planMins(); return (T.phase === "focus" ? f : b)*60000; }
+function renderTimer(){
+  const ms = tLeft(), s = Math.ceil(ms/1000);
+  $("clock").textContent = `${pad(Math.floor(s/60))}:${pad(s%60)}`;
+  $("clock").classList.toggle("brk", T.phase === "break");
+  $("tLabel").textContent = T.phase === "focus" ? "Focus block" : "Break";
+  $("tGo").textContent = T.endsAt ? "Pause" : (T.left != null ? "Resume" : (T.phase === "focus" ? "Start" : "Start break"));
+  document.querySelectorAll("#tPlan button").forEach(b => { b.setAttribute("aria-pressed", b.dataset.p === T.plan); b.disabled = !!T.endsAt; });
+  const fm = entry(TODAY).focusMin || 0;
+  $("tToday").textContent = `${fm} focus minute${fm===1?"":"s"} today${fm >= 180 ? " · morning block done" : ""}`;
+}
+function beep(){ try { if (!audio) return; const o = audio.createOscillator(), gn = audio.createGain(); o.frequency.value = 880; o.connect(gn); gn.connect(audio.destination); gn.gain.setValueAtTime(.25, audio.currentTime); gn.gain.exponentialRampToValueAtTime(.001, audio.currentTime + .8); o.start(); o.stop(audio.currentTime + .8); } catch(e){} }
+function timerLoop(){
+  clearInterval(tick);
+  if (!T.endsAt) return;
+  tick = setInterval(() => {
+    if (Date.now() >= T.endsAt) {
+      const [f] = planMins();
+      if (T.phase === "focus") editDay(TODAY, {focusMin: (entry(TODAY).focusMin||0) + f});
+      T = {...T, phase: T.phase === "focus" ? "break" : "focus", endsAt:null, left:null};
+      lsSet("op88.timer", T); beep(); clearInterval(tick);
+    }
+    if (view === "today") renderTimer();
+  }, 500);
+}
+$("tGo").onclick = () => {
+  try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); } catch(e){}
+  if (T.endsAt) { T.left = T.endsAt - Date.now(); T.endsAt = null; }
+  else { T.endsAt = Date.now() + tLeft(); T.left = null; try { navigator.wakeLock?.request("screen").catch(()=>{}); } catch(e){} }
+  lsSet("op88.timer", T); timerLoop(); renderTimer();
+};
+$("tReset").onclick = () => { T = {plan:T.plan, phase:"focus", endsAt:null, left:null}; lsSet("op88.timer", T); timerLoop(); renderTimer(); };
+$("tPlan").onclick = e => { const b = e.target.closest("button"); if (!b || T.endsAt) return; T = {plan:b.dataset.p, phase:"focus", endsAt:null, left:null}; lsSet("op88.timer", T); renderTimer(); };
+
+// ---------- DSA ----------
+let query = "", hideDone = lsGet("op88.hide", false), openTopics = new Set(lsGet("op88.open", [0]));
+function probRow(p, extra){
+  const s = solved(), on = !!s[p.id], m = D.data.pm[p.id] || {};
+  const tags = `${m.d ? `<span class="tag ${m.d}">${m.d}</span>` : ""}${m.hint && !m.redone ? `<span class="tag hint">HINT</span>` : ""}`;
+  return `<div class="prob${on?" on":""}"><input type="checkbox" class="ck" data-id="${p.id}"${on?" checked":""} aria-label="Solved: ${esc(p.name)}">
+    <button class="nm" data-open="${p.id}"><span>${esc(p.name)}</span>${tags}</button>
+    <span class="r">${extra || (on ? `<em>${fmt(s[p.id])}${m.min?` · ${m.min}m`:""}</em>` : `<a href="${lcLink(p)}" target="_blank" rel="noopener" aria-label="Find ${esc(p.name)} on LeetCode">LC ↗</a>`)}</span></div>`;
+}
+function renderDsa(){
+  const s = solved(), done = Object.keys(s).length;
+  $("dsaDone").textContent = done; $("dsaMeter").style.width = `${done/TOTAL*100}%`;
+  const from = TODAY < START ? START : TODAY, left = Math.max(1, diff(from, END) + 1);
+  $("fPace").textContent = done >= TOTAL ? "done" : ((TOTAL-done)/left).toFixed(1);
+  const cbd = solvedCountByDate(); let s7 = 0; for (let i=0;i<7;i++) s7 += cbd[addDays(TODAY,-i)] || 0;
+  const avg = s7/7; $("fAvg").textContent = avg.toFixed(1);
+  $("fEta").textContent = done >= TOTAL ? "done" : avg > 0 ? fmt(addDays(TODAY, Math.ceil((TOTAL-done)/avg))) : "—";
+  $("qHint").textContent = sel === TODAY ? "ticks log on today" : `ticks log on ${fmt(sel)}`;
+
+  const due = PROBS.map(p => ({p, d: nextRev(p.id)})).filter(x => x.d && x.d <= TODAY).sort((a,b) => a.d < b.d ? -1 : 1);
+  const soon = PROBS.map(p => nextRev(p.id)).filter(d => d && d > TODAY).sort()[0];
+  $("revList").innerHTML = due.length ? `<div style="padding-top:8px"></div>` + due.map(({p,d}) => {
+      const k = (D.data.rev[p.id]||[]).length;
+      return probRow(p, `<em>${d < TODAY ? `${diff(d,TODAY)}d late` : "due"} · R${k+1}</em><button class="btn sm" data-rev="${p.id}">Re-solved</button>`);
+    }).join("")
+    : `<div class="empty">Nothing due.${soon ? ` Next revision ${fmt(soon)}.` : " Solve a few problems and they'll come back here on day 3, 7 and 21."}</div>`;
+  $("revHint").textContent = due.length ? `${due.length} due` : "re-solve on day 3, 7 and 21";
+
+  const next = PROBS.filter(p => !s[p.id]).slice(0, goals().dsa);
+  $("queue").innerHTML = next.length ? next.map(p => probRow(p)).join("") : `<div class="empty">All 300 solved. Go get the offer.</div>`;
+
+  const redo = PROBS.filter(p => s[p.id] && D.data.pm[p.id]?.hint && !D.data.pm[p.id]?.redone);
+  $("redoPanel").hidden = !redo.length;
+  $("redoCount").textContent = `${redo.length} to redo`;
+  $("redoList").innerHTML = redo.map(p => probRow(p, `<button class="btn sm" data-redo="${p.id}">Did it clean</button>`)).join("");
+
+  const qq = query.trim().toLowerCase();
+  $("topics").innerHTML = TOPICS.map(([t], ti) => {
+    const ps = PROBS.filter(p => p.ti === ti), n = ps.filter(p => s[p.id]).length;
+    const shown = ps.filter(p => (!qq || p.name.toLowerCase().includes(qq)) && (!hideDone || !s[p.id]));
+    if (qq && !shown.length) return "";
+    return `<details class="panel topic${n===ps.length?" done":""}" data-ti="${ti}" data-kind="dsa"${qq || openTopics.has(ti) ? " open" : ""}>
+      <summary><strong>${esc(t)}</strong><span class="mono">${n}/${ps.length}</span><span class="tb"><i style="width:${n/ps.length*100}%"></i></span></summary>
+      ${shown.map(p => probRow(p)).join("") || `<div class="empty">Every problem here is solved.</div>`}</details>`;
+  }).join("") || `<div class="empty">No problem matches “${esc(query)}”.</div>`;
+}
+function setSolved(id, on, date){
+  const s = solved();
+  if (on) s[id] = date || sel; else { delete s[id]; delete D.data.rev[id]; }
+  D.save(); render(); if (sheetId === id) renderSheet();
+}
+
+// problem sheet
+let sheetId = null;
+function openSheet(id){ sheetId = id; $("scrim").hidden = false; renderSheet(); setTimeout(() => $("shClose").focus(), 0); }
+function closeSheet(){ sheetId = null; $("scrim").hidden = true; }
+function pm(){ return D.data.pm[sheetId] || (D.data.pm[sheetId] = {}); }
+function renderSheet(){
+  if (!sheetId) return;
+  const p = PBY[sheetId], m = D.data.pm[sheetId] || {}, sd = solved()[sheetId];
+  $("shTopic").textContent = p.t; $("shTitle").textContent = p.name;
+  $("shSolve").textContent = sd ? "Mark unsolved" : `Mark solved ${sel === TODAY ? "today" : "on " + fmt(sel)}`;
+  $("shSolve").classList.toggle("solid", !sd);
+  $("shLink").href = lcLink(p);
+  document.querySelectorAll("#shDiff button").forEach(b => b.setAttribute("aria-pressed", m.d === b.dataset.v));
+  setVal("shMin", m.min); setVal("shNote", m.note); setVal("shDate", sd || "");
+  $("shDate").disabled = !sd;
+  $("shHint").setAttribute("aria-pressed", !!m.hint); $("shHint").textContent = m.hint ? (m.redone ? "Yes · redone" : "Yes") : "No";
+  const r = D.data.rev[sheetId] || [], nx = nextRev(sheetId);
+  $("shRev").textContent = !sd ? "Revisions start once it's solved." : `Revised ${r.length} of 3 times${r.length ? ` (${r.map(d => fmt(d)).join(", ")})` : ""}.${nx ? ` Next: ${fmt(nx)}.` : " Fully revised."}`;
+}
+$("shClose").onclick = closeSheet;
+$("scrim").onclick = e => { if (e.target === $("scrim")) closeSheet(); };
+document.addEventListener("keydown", e => { if (e.key === "Escape" && sheetId) closeSheet(); });
+$("shSolve").onclick = () => setSolved(sheetId, !solved()[sheetId]);
+$("shDiff").onclick = e => { const b = e.target.closest("button"); if (!b) return; const m = pm(); m.d = m.d === b.dataset.v ? undefined : b.dataset.v; D.save(); renderSheet(); render(); };
+$("shHint").onclick = () => { const m = pm(); m.hint = !m.hint; if (!m.hint) delete m.redone; D.save(); renderSheet(); render(); };
+$("shMin").addEventListener("input", e => { pm().min = num(e.target.value); D.save(); });
+$("shNote").addEventListener("input", e => { pm().note = e.target.value; D.save(); });
+$("shDate").addEventListener("change", e => { if (e.target.value && solved()[sheetId]) { solved()[sheetId] = e.target.value; D.save(); render(); renderSheet(); } });
+
+// ---------- BODY ----------
+let liftSel = lsGet("op88.lift", null);
+function renderBody(){
+  const g = goals(), e = entry(sel);
+  $("runLvl").textContent = `Level ${g.runStage} of ${RUN.length}`;
+  $("stages").innerHTML = RUN.map((_,i) => `<i class="${i+1 < g.runStage ? "on" : i+1 === g.runStage ? "cur" : ""}"></i>`).join("");
+  $("runPlan").textContent = RUN[g.runStage-1][0];
+  const n = runsAtStage();
+  $("runProg").textContent = g.runStage === RUN.length && n >= RUNS_TO_LEVEL ? "Top level. Keep it 4–5 times a week and add a little pace." :
+    n >= RUNS_TO_LEVEL ? `${n} runs done at this level. You're ready for the next one if your knees and shins feel fine.` :
+    `${n} of ${RUNS_TO_LEVEL} runs at this level · about ${RUN[g.runStage-1][1]} each. Minutes are jog · walk, repeated.`;
+  $("lvlUp").disabled = g.runStage >= RUN.length; $("lvlUp").classList.toggle("solid", n >= RUNS_TO_LEVEL);
+  $("lvlDown").disabled = g.runStage <= 1;
+
+  $("woDay").textContent = fmt(sel,{weekday:"short",day:"numeric",month:"short"});
+  const L = e.lifts || [];
+  $("lifts").innerHTML = L.length ? L.map((l,i) => `<div class="lift"><span><strong>${esc(l.ex)}</strong></span><span class="mono" style="color:var(--muted);font-size:13px">${l.sets||"–"}×${l.reps||"–"}${l.kg?` @ ${l.kg} kg`:""}</span><button class="navbtn" style="width:30px;height:30px;font-size:15px" data-unlift="${i}" aria-label="Remove ${esc(l.ex)}">×</button></div>`).join("")
+    : `<p class="note">No lifts logged for this day.</p>`;
+  const allEx = [...new Set([...EXERCISES, ...Object.values(days).flatMap(d => (d.lifts||[]).map(l => l.ex))])];
+  $("exList").innerHTML = allEx.map(x => `<option value="${esc(x)}"></option>`).join("");
+  const prev = Object.values(days).filter(d => d.date < sel && (d.lifts||[]).length).sort((a,b) => a.date < b.date ? 1 : -1)[0];
+  $("lCopy").hidden = !prev || L.length > 0;
+  if (prev) $("lCopy").textContent = `Copy ${fmt(prev.date)} (${prev.gymWhat || prev.lifts.length + " exercises"})`;
+
+  // strength chart
+  const logged = {};
+  Object.values(days).forEach(d => (d.lifts||[]).forEach(l => { if (l.kg) (logged[l.ex] = logged[l.ex] || []).push({date:d.date, kg:l.kg, reps:l.reps}); }));
+  const names = Object.keys(logged).sort();
+  if (!names.includes(liftSel)) liftSel = names[0] || null;
+  $("liftPick").innerHTML = names.length ? names.map(x => `<option${x===liftSel?" selected":""}>${esc(x)}</option>`).join("") : `<option>No lifts yet</option>`;
+  $("liftPick").disabled = !names.length;
+  drawLift(liftSel ? logged[liftSel] : []);
+  const prs = names.map(x => ({x, kg: Math.max(...logged[x].map(r => r.kg))})).sort((a,b) => b.kg - a.kg).slice(0, 6);
+  $("liftPRs").innerHTML = prs.map(p => `<div><span class="eyebrow">${esc(p.x)}</span><b class="mono">${p.kg}<small> kg</small></b></div>`).join("") || `<div style="grid-column:1/-1"><p class="note">Heaviest weight per exercise shows up here once you log lifts with kg.</p></div>`;
+
+  ["waist","chest","arm","hips"].forEach(k => setVal(k, e[k]));
+  const ms = Object.values(days).filter(d => d.waist || d.chest || d.arm || d.hips).sort((a,b) => a.date < b.date ? -1 : 1);
+  const lastM = ms.length ? ms[ms.length-1].date : null;
+  $("msDue").textContent = !lastM ? "every 2 weeks · none yet" : diff(lastM, TODAY) >= 14 ? `due · last ${fmt(lastM)}` : `next ${fmt(addDays(lastM,14))}`;
+  drawMeasures(ms);
+}
+$("lvlUp").onclick = () => { const g = goals(); if (g.runStage < RUN.length) { g.runStage++; g.levelAt = TODAY; G.save(); render(); } };
+$("lvlDown").onclick = () => { const g = goals(); if (g.runStage > 1) { g.runStage--; g.levelAt = TODAY; G.save(); render(); } };
+$("lAdd").onclick = () => {
+  const ex = $("lEx").value.trim(); if (!ex) { $("lEx").focus(); return; }
+  const l = {ex, sets: num($("lSets").value), reps: num($("lReps").value), kg: num($("lKg").value)};
+  const e = entry(sel); editDay(sel, {lifts: [...(e.lifts||[]), l], gym: true});
+  ["lEx","lSets","lReps","lKg"].forEach(id => $(id).value = ""); $("lEx").focus();
+};
+$("lCopy").onclick = () => {
+  const prev = Object.values(days).filter(d => d.date < sel && (d.lifts||[]).length).sort((a,b) => a.date < b.date ? 1 : -1)[0];
+  if (prev) editDay(sel, {lifts: prev.lifts.map(l => ({...l})), gym: true, gymWhat: entry(sel).gymWhat || prev.gymWhat || ""});
+};
+$("liftPick").onchange = e => { liftSel = e.target.value; lsSet("op88.lift", liftSel); renderBody(); };
+["waist","chest","arm","hips"].forEach(k => $(k).addEventListener("input", e => edit({[k]: num(e.target.value)})));
+
+// ---------- PREP ----------
+let openPrep = new Set(lsGet("op88.openPrep", [0]));
+const STATUSES = ["Applied","Online test","Interview","Offer","Rejected"];
+function renderPrep(){
+  const done = P.data.done, n = PREPS.filter(p => done[p.id]).length;
+  $("prepDone").textContent = n; $("prepTot").textContent = `/ ${PREPS.length} topics`; $("prepMeter").style.width = `${n/PREPS.length*100}%`;
+  $("prepList").innerHTML = PREP.map(([t], ti) => {
+    const ps = PREPS.filter(p => p.ti === ti), k = ps.filter(p => done[p.id]).length;
+    return `<details class="panel topic${k===ps.length?" done":""}" data-ti="${ti}" data-kind="prep" style="--c:var(--gym)"${openPrep.has(ti)?" open":""}>
+      <summary><strong>${esc(t)}</strong><span class="mono">${k}/${ps.length}</span><span class="tb"><i style="width:${k/ps.length*100}%"></i></span></summary>
+      ${ps.map(p => `<label class="prob${done[p.id]?" on":""}" style="cursor:pointer"><input type="checkbox" class="ck" style="--c:var(--gym)" data-prep="${p.id}"${done[p.id]?" checked":""}><span class="nm"><span>${esc(p.name)}</span></span><em>${done[p.id]?fmt(done[p.id]):""}</em></label>`).join("")}</details>`;
+  }).join("");
+  const cs = [...P.data.companies].map((c,i) => ({...c, i})).sort((a,b) => (a.date||"9") < (b.date||"9") ? -1 : 1);
+  const offers = cs.filter(c => c.status === "Offer").length;
+  $("coCount").textContent = cs.length ? `${cs.length} tracked${offers ? ` · ${offers} offer${offers>1?"s":""}` : ""}` : "";
+  $("coList").innerHTML = cs.map(c => `<div class="co"><div style="min-width:0"><strong>${esc(c.name)}</strong><small>${esc(c.role || "Role not set")}${c.date ? ` · ${fmt(c.date)}${c.date >= TODAY ? ` · in ${diff(TODAY,c.date)}d` : ""}` : ""}</small></div>
+    <select data-co="${c.i}" class="st-${(c.status||"Applied").split(" ")[0]}" aria-label="Status for ${esc(c.name)}">${STATUSES.map(s => `<option${s===(c.status||"Applied")?" selected":""}>${s}</option>`).join("")}</select>
+    <input class="field full" data-conote="${c.i}" value="${esc(c.note||"")}" placeholder="Rounds, topics asked, contacts" aria-label="Notes for ${esc(c.name)}">
+    <div class="full" style="display:flex;justify-content:flex-end"><button class="btn sm" data-codel="${c.i}">${delArm === c.i ? "Tap again to remove" : "Remove"}</button></div></div>`).join("") || `<div class="empty">Add each placement drive as it's announced. Track the stage it reaches and what they asked.</div>`;
+}
+let delArm = null;
+$("cAdd").onclick = () => {
+  const name = $("cName").value.trim(); if (!name) { $("cName").focus(); return; }
+  P.data.companies.push({name, role: $("cRole").value.trim(), date: $("cDate").value || null, status:"Applied", note:""});
+  P.save(); ["cName","cRole","cDate"].forEach(id => $(id).value = ""); renderPrep();
+};
+
+// ---------- STATS ----------
+let wk = weekStart(TODAY < START ? START : TODAY);
+const GRADES = [[.85,"A"],[.7,"B"],[.55,"C"],[.4,"D"],[0,"F"]];
+const FIX = {dsa:"Protect the morning DSA block. It's the first thing that slips.", run:"Get the morning run in before anything else. Shoes by the door.", gym:"Gym is the anchor. Book the 5–7 pm slot like a class.", steps:"Add a 20-minute walk after lunch and dinner for steps.", protein:"Protein is short. Add eggs, soya or whey to two meals.", cal:"Calories ran over or went unlogged. Log every meal, even the bad ones.", sleep:"Sleep is short. Phone out of the room by 10:30."};
+const HNAME = {dsa:"DSA goal", run:"Runs", gym:"Gym", steps:"Steps goal", protein:"Protein goal", cal:"Under calories", sleep:"7h sleep"};
+function weekSummary(ws){
+  const ds = Array.from({length:7}, (_,i) => addDays(ws,i)).filter(d => d <= TODAY && d >= START);
+  const cnt = {dsa:0,run:0,gym:0,steps:0,protein:0,cal:0,sleep:0}; let tot = 0, best = null, dsa = 0, stepSum = 0, stepN = 0, focus = 0;
+  ds.forEach(d => { const h = habits(d), sc = score(d), e = entry(d); tot += sc; for (const k in h) if (h[k]) cnt[k]++;
+    if (!best || sc > score(best)) best = d; dsa += dsaCount(d); if (e.steps) { stepSum += e.steps; stepN++; } focus += e.focusMin||0; });
+  const wts = Object.values(days).filter(e => e.weight).sort((a,b) => a.date < b.date ? -1 : 1);
+  const before = wts.filter(e => e.date < ws).pop(), inWk = wts.filter(e => e.date >= ws && e.date <= addDays(ws,6)).pop();
+  return {ds, cnt, pct: ds.length ? tot/(ds.length*7) : 0, best, dsa, steps: stepN ? Math.round(stepSum/stepN) : null, focus, wChange: before && inWk ? +(inWk.weight - before.weight).toFixed(1) : null};
+}
+function renderStats(){
+  const g = goals(), s = solved();
+  $("tStreak").textContent = currentStreak();
+  const ws = Object.values(days).filter(e => e.weight).sort((a,b) => a.date < b.date ? -1 : 1);
+  const lastW = ws.length ? ws[ws.length-1].weight : null;
+  $("tLost").textContent = lastW ? Math.max(0, g.start - lastW).toFixed(1) : "0.0";
+  $("tLostSub").textContent = lastW ? `kg · ${Math.max(0, lastW - g.target).toFixed(1)} to the Dec 31 target` : `kg since ${g.start}. Log a weigh-in`;
+  $("wNow").textContent = lastW ? `now ${lastW} kg` : "no weigh-ins yet";
+  const extras = Object.values(days).reduce((a,e) => a + (e.dsaExtra||0), 0), done = Object.keys(s).length;
+  $("tDsa").textContent = done + extras; $("tDsaSub").textContent = `${done} from the 300 list${extras ? ` + ${extras} extra` : ""}`;
+  let g7 = 0; for (let i=0;i<7;i++) if (entry(addDays(TODAY,-i)).gym) g7++;
+  $("tGym").textContent = Object.values(days).filter(e => e.gym).length; $("tGymSub").textContent = `${g7} in the last 7 days · target 6`;
+
+  // week report
+  const W = weekSummary(wk);
+  $("wkLbl").textContent = `${fmt(wk)} – ${fmt(addDays(wk,6))}`;
+  $("wkPrev").disabled = wk <= weekStart(START); $("wkNext").disabled = addDays(wk,7) > TODAY;
+  if (!W.ds.length) { $("grade").textContent = "—"; $("rstats").innerHTML = `<span>This week hasn't started yet.</span>`; $("rFix").textContent = ""; }
+  else {
+    const gr = GRADES.find(([t]) => W.pct >= t)[1];
+    $("grade").textContent = gr; $("grade").style.color = gr === "A" ? "var(--good)" : gr === "B" ? "var(--dsa)" : gr === "C" ? "var(--gym)" : "var(--bad)";
+    const n = W.ds.length;
+    $("rstats").innerHTML = [["Habits hit", `${Math.round(W.pct*100)}%`],["DSA", W.dsa],["Gym", `${W.cnt.gym}/${n}`],["Runs", `${W.cnt.run}/${n}`],["Avg steps", W.steps ? W.steps.toLocaleString("en-IN") : "—"],["Protein days", `${W.cnt.protein}/${n}`],["Focus", `${Math.round(W.focus/60*10)/10} h`],["Weight", W.wChange == null ? "—" : `${W.wChange > 0 ? "+" : ""}${W.wChange} kg`]]
+      .map(([k,v]) => `<span>${k}</span><b>${v}</b>`).join("");
+    const weakest = Object.entries(W.cnt).sort((a,b) => a[1]-b[1])[0][0];
+    $("rFix").innerHTML = `<b style="color:var(--ink)">Best day:</b> ${fmt(W.best,{weekday:"long"})} (${score(W.best)}/7). <b style="color:var(--ink)">Fix next:</b> ${HNAME[weakest]}, hit on ${W.cnt[weakest]} of ${n} days. ${FIX[weakest]}`;
+  }
+
+  // personal records
+  const all = Object.values(days);
+  const maxBy = (f) => all.reduce((b,e) => (f(e)||0) > (b ? f(b)||0 : 0) ? e : b, null);
+  const cbd = solvedCountByDate(); let mostD = null; for (const d in days) { const c = (cbd[d]||0) + (days[d].dsaExtra||0); if (!mostD || c > mostD[1]) mostD = [d,c]; } for (const d in cbd) if (!mostD || cbd[d] > mostD[1]) mostD = [d, cbd[d] + (entry(d).dsaExtra||0)];
+  const rk = maxBy(e => e.runKm), rm = maxBy(e => e.runMin), st = maxBy(e => e.steps), fo = maxBy(e => e.focusMin);
+  const PR = [["Longest streak", bestStreak(), "days", null],["Most DSA in a day", mostD ? mostD[1] : 0, "", mostD && mostD[1] ? mostD[0] : null],
+    ["Longest run", rk?.runKm || 0, "km", rk?.runKm ? rk.date : null],["Longest run time", rm?.runMin || 0, "min", rm?.runMin ? rm.date : null],
+    ["Most steps", st?.steps ? st.steps.toLocaleString("en-IN") : 0, "", st?.steps ? st.date : null],["Most focus", fo?.focusMin || 0, "min", fo?.focusMin ? fo.date : null]];
+  $("prs").innerHTML = PR.map(([l,v,u,d]) => `<div><span class="eyebrow">${l}</span><b class="mono">${v}<small> ${u}</small></b><small>${d ? fmt(d) : "—"}</small></div>`).join("");
+
+  // 88 grid
+  let gh = "";
+  ["M","T","W","T","F","S","S"].forEach((wd, r) => {
+    gh += `<span class="wd">${wd}</span>`;
+    for (let c=0;c<13;c++){
+      const dd = addDays(START, c*7 + r);
+      if (dd > END) { gh += `<button class="x" tabindex="-1" aria-hidden="true"></button>`; continue; }
+      const sc = dd <= TODAY ? score(dd) : 0;
+      const bg = sc ? `color-mix(in oklab, var(--ink) ${12 + sc*12}%, var(--raise))` : "var(--raise)";
+      gh += `<button data-d="${dd}" class="${dd===TODAY?"today":""}" style="background:${bg}${dd>TODAY?";opacity:.45":""}" aria-label="${fmt(dd,{weekday:"short",day:"numeric",month:"short"})}: ${sc} of 7 habits"${dd>addDays(TODAY,1)?" disabled":""}></button>`;
+    }
+  });
+  $("grid88").innerHTML = gh;
+
+  drawWeight(ws); drawClimb(); drawRadar(); drawSpeed(); drawSteps(); drawMiles(done, lastW);
+  [["gStart","start"],["gTarget","target"],["gStretch","stretch"],["gDsa","dsa"],["gSteps","steps"],["gProtein","protein"],["gCal","cal"]].forEach(([id,k]) => setVal(id, g[k]));
+  $("mealLib").innerHTML = g.meals.map((m,i) => `<span class="chip"><span>${esc(m.n)}</span><em>${m.p}g · ${m.k}</em><button data-delmeal="${i}" aria-label="Remove ${esc(m.n)}">×</button></span>`).join("") || `<span class="note">No meal buttons yet.</span>`;
+}
+
+// ---------- charts ----------
+const AX = 'font-size="11" fill="var(--muted)" font-family="Geist Mono, monospace"';
+const xDate = (s, L, W, R) => L + Math.max(0, Math.min(1, diff(START, s)/(SPAN-1))) * (W-L-R);
+function monthTicks(H, L, W, R){
+  return [["2026-10-05","OCT 5"],["2026-11-01","NOV"],["2026-12-01","DEC"],["2026-12-31","DEC 31"]].map(([d,l],i,a) =>
+    `<text x="${xDate(d,L,W,R)}" y="${H-6}" text-anchor="${i===0?"start":i===a.length-1?"end":"middle"}" ${AX}>${l}</text>`).join("");
+}
+const emptyMsg = (x, y, t) => `<text x="${x}" y="${y}" text-anchor="middle" font-size="13" fill="var(--muted)" font-family="Geist, sans-serif">${t}</text>`;
+function lineChart({W,H,L,R,T,B,lo,hi,step,fmtY}, series, extra=""){
+  const y = v => T + (hi-v)/(hi-lo)*(H-T-B), x = s => xDate(s,L,W,R);
+  let g = "";
+  for (let v=lo; v<=hi+1e-9; v+=step) g += `<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${L-8}" y="${y(v)+4}" text-anchor="end" ${AX}>${fmtY ? fmtY(v) : v}</text>`;
+  g += monthTicks(H,L,W,R) + extra;
+  series.forEach(({pts, color, area, label}) => {
+    if (!pts.length) return;
+    const P = pts.map(p => [x(p[0]), y(p[1])]);
+    if (area) g += `<path d="M${P[0][0]},${y(lo)} ${P.map(p=>"L"+p.join(",")).join(" ")} L${P[P.length-1][0]},${y(lo)}Z" fill="${color}" opacity=".1"/>`;
+    g += `<polyline points="${P.map(p=>p.join(",")).join(" ")}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+    P.forEach((p,i) => g += `<circle cx="${p[0]}" cy="${p[1]}" r="${i===P.length-1?4.5:2.5}" fill="${i===P.length-1?color:"var(--bg)"}" stroke="${color}" stroke-width="2"/>`);
+    if (label) { const lp = P[P.length-1]; g += `<text x="${Math.min(lp[0]+9, W-R-34)}" y="${lp[1]-9}" font-size="13" font-weight="600" fill="${color}" font-family="Geist Mono, monospace">${label}</text>`; }
+  });
+  return {g, x, y};
+}
+function drawWeight(ws){
+  const g0 = goals(); ws = ws.filter(e => e.date >= addDays(START,-14));
+  const vals = [g0.start, g0.target, g0.stretch, ...ws.map(e => e.weight)];
+  const cfg = {W:600,H:250,L:40,R:12,T:16,B:28, lo: Math.floor((Math.min(...vals)-1)/5)*5, hi: Math.ceil((Math.max(...vals)+1)/5)*5, step:5};
+  const y = v => cfg.T + (cfg.hi-v)/(cfg.hi-cfg.lo)*(cfg.H-cfg.T-cfg.B), x = s => xDate(s,cfg.L,cfg.W,cfg.R);
+  const extra = `<line x1="${x(START)}" y1="${y(g0.start)}" x2="${x(END)}" y2="${y(g0.target)}" stroke="var(--dim)" stroke-width="1.5" stroke-dasharray="5 5"/>
+    <line x1="${x(START)}" y1="${y(g0.start)}" x2="${x(END)}" y2="${y(g0.stretch)}" stroke="var(--gym)" stroke-width="1.5" stroke-dasharray="2 5" opacity=".8"/>
+    <text x="${cfg.W-cfg.R}" y="${y(g0.target)-8}" text-anchor="end" ${AX}>${g0.target}</text><text x="${cfg.W-cfg.R}" y="${y(g0.stretch)+16}" text-anchor="end" font-size="11" fill="var(--gym)" font-family="Geist Mono, monospace">${g0.stretch}</text>`;
+  const {g} = lineChart(cfg, [{pts: ws.map(e => [e.date, e.weight]), color:"var(--ink)", area:true, label: ws.length ? ws[ws.length-1].weight : ""}], extra);
+  $("wChart").innerHTML = g + (ws.length ? "" : emptyMsg(300, 115, "Log your first weigh-in on the Today tab"));
+}
+function drawClimb(){
+  const cfg = {W:600,H:250,L:40,R:12,T:16,B:28, lo:0, hi:TOTAL, step:100};
+  const y = v => cfg.T + (cfg.hi-v)/cfg.hi*(cfg.H-cfg.T-cfg.B), x = s => xDate(s,cfg.L,cfg.W,cfg.R);
+  const five = addDays(START, Math.ceil(TOTAL/goals().dsa)-1);
+  const extra = `<line x1="${x(START)}" y1="${y(0)}" x2="${x(END)}" y2="${y(TOTAL)}" stroke="var(--dim)" stroke-width="1.5" stroke-dasharray="5 5"/><line x1="${x(START)}" y1="${y(0)}" x2="${x(five)}" y2="${y(TOTAL)}" stroke="var(--line2)" stroke-width="1.5"/>`;
+  const cbd = solvedCountByDate(); let cum = Object.entries(cbd).filter(([d]) => d < START).reduce((a,[,n]) => a+n, 0); const pts = [];
+  for (let d = START; d <= TODAY && d <= END; d = addDays(d,1)) { cum += cbd[d]||0; pts.push([d, cum]); }
+  const {g} = lineChart(cfg, [{pts: pts.length > 1 ? pts : pts, color:"var(--dsa)", area:true, label: pts.length ? cum : ""}], extra);
+  $("cChart").innerHTML = g.replace(/<circle[^>]*r="2\.5"[^>]*\/>/g, "") + (pts.length ? "" : emptyMsg(300, 115, "Your line starts Oct 5"));
+  $("cNow").textContent = `${Object.keys(solved()).length} / ${TOTAL}`;
+}
+const ABBR = ["Arrays","Strings","Lists","Stack/Q","Trees","BST","Heaps","Bin srch","DP","Graphs","Backtrk","Tries","Bits","Greedy","Math"];
+function drawRadar(){
+  const cx = 210, cy = 196, R = 130, n = TOPICS.length, s = solved(), pmm = D.data.pm;
+  const ang = i => -Math.PI/2 + i*2*Math.PI/n, pt = (i, r) => [cx + Math.cos(ang(i))*r, cy + Math.sin(ang(i))*r];
+  let g = "";
+  [.25,.5,.75,1].forEach(f => g += `<polygon points="${TOPICS.map((_,i) => pt(i,R*f).join(",")).join(" ")}" fill="none" stroke="var(--line)"/>`);
+  TOPICS.forEach((t,i) => { const [x2,y2] = pt(i,R); g += `<line x1="${cx}" y1="${cy}" x2="${x2}" y2="${y2}" stroke="var(--line)"/>`;
+    const [lx,ly] = pt(i, R+22), a = Math.cos(ang(i)); g += `<text x="${lx}" y="${ly+4}" text-anchor="${a>.3?"start":a<-.3?"end":"middle"}" ${AX}>${ABBR[i] || t}</text>`; });
+  const solvedPct = TOPICS.map((_,ti) => { const ps = PROBS.filter(p => p.ti === ti); return ps.filter(p => s[p.id]).length/ps.length; });
+  const cleanPct = TOPICS.map((_,ti) => { const ps = PROBS.filter(p => p.ti === ti); return ps.filter(p => s[p.id] && (!pmm[p.id]?.hint || pmm[p.id]?.redone)).length/ps.length; });
+  const poly = (v, col, op) => `<polygon points="${v.map((f,i) => pt(i, Math.max(f, .015)*R).join(",")).join(" ")}" fill="${col}" fill-opacity="${op}" stroke="${col}" stroke-width="2" stroke-linejoin="round"/>`;
+  g += poly(solvedPct, "var(--dsa)", .18) + poly(cleanPct, "var(--good)", .12);
+  [25,50,75,100].forEach((p,i) => g += `<text x="${cx+4}" y="${cy - R*(i+1)/4 + 12}" font-size="10" fill="var(--dim)" font-family="Geist Mono, monospace">${p}</text>`);
+  $("radar").innerHTML = g;
+}
+function drawSpeed(){
+  const W=600,H=220,L=40,R=12,T=14,B=28, weeks = 13;
+  const buckets = {E:[],M:[],H:[]}; for (let w=0; w<weeks; w++) { buckets.E[w]=[]; buckets.M[w]=[]; buckets.H[w]=[]; }
+  const s = solved(); let any = false;
+  for (const id in s) { const m = D.data.pm[id]; if (!m?.min || !m.d) continue; const w = Math.floor(diff(START, s[id])/7); if (w < 0 || w >= weeks) continue; buckets[m.d][w].push(m.min); any = true; }
+  const avgs = {}; let top = 30;
+  for (const k in buckets) avgs[k] = buckets[k].map(a => a.length ? a.reduce((x,y)=>x+y,0)/a.length : null), top = Math.max(top, ...avgs[k].filter(v => v != null));
+  top = Math.ceil(top/15)*15;
+  const x = w => L + (w + .5) * (W-L-R)/weeks, y = v => T + (top-v)/top*(H-T-B);
+  let g = "";
+  for (let v=0; v<=top; v+=15) g += `<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${L-8}" y="${y(v)+4}" text-anchor="end" ${AX}>${v}</text>`;
+  for (let w=0; w<weeks; w+=2) g += `<text x="${x(w)}" y="${H-6}" text-anchor="middle" ${AX}>W${w+1}</text>`;
+  const col = {E:"var(--good)", M:"var(--gym)", H:"var(--bad)"};
+  for (const k of ["E","M","H"]) {
+    const P = avgs[k].map((v,w) => v == null ? null : [x(w), y(v)]).filter(Boolean);
+    if (P.length > 1) g += `<polyline points="${P.map(p=>p.join(",")).join(" ")}" fill="none" stroke="${col[k]}" stroke-width="2.5" stroke-linejoin="round"/>`;
+    P.forEach(p => g += `<circle cx="${p[0]}" cy="${p[1]}" r="3.5" fill="${col[k]}"/>`);
+  }
+  if (!any) g += emptyMsg(300, 100, "Set difficulty and minutes on solved problems");
+  $("tChart").innerHTML = g;
+}
+function drawSteps(){
+  const W=600,H=200,L=40,R=12,T=14,B=26, g0 = goals();
+  const ds = Array.from({length:14}, (_,i) => addDays(TODAY, i-13)), vs = ds.map(d => entry(d).steps || 0);
+  const top = Math.max(g0.steps*1.3, ...vs), y = v => T + (top-v)/top*(H-T-B), bw = (W-L-R)/14;
+  let g = `<line x1="${L}" x2="${W-R}" y1="${y(0)}" y2="${y(0)}" stroke="var(--line)"/><line x1="${L}" x2="${W-R}" y1="${y(g0.steps)}" y2="${y(g0.steps)}" stroke="var(--dim)" stroke-dasharray="4 4"/><text x="${L-8}" y="${y(g0.steps)+4}" text-anchor="end" ${AX}>${g0.steps/1000}k</text>`;
+  ds.forEach((d,i) => { const v = vs[i], bx = L + i*bw + bw*.18, w = bw*.64;
+    g += v ? `<rect x="${bx}" y="${y(v)}" width="${w}" height="${y(0)-y(v)}" rx="3" fill="var(--move)" opacity="${v >= g0.steps ? 1 : .45}"/>` : `<rect x="${bx}" y="${y(0)-2}" width="${w}" height="2" fill="var(--line2)"/>`;
+    if (i%2===1) g += `<text x="${bx+w/2}" y="${H-6}" text-anchor="middle" ${AX}>${parse(d).getDate()}</text>`; });
+  $("sChart").innerHTML = g;
+  const lg = vs.filter(Boolean); $("sAvg").textContent = lg.length ? `avg ${Math.round(lg.reduce((a,b)=>a+b,0)/lg.length).toLocaleString("en-IN")}` : "avg —";
+}
+function drawLift(rows){
+  const cfg = {W:600,H:220,L:40,R:12,T:16,B:28};
+  if (!rows || !rows.length) { $("lChart").innerHTML = monthTicks(cfg.H,cfg.L,cfg.W,cfg.R) + emptyMsg(300, 100, "Log a lift with kg to see it climb"); return; }
+  const byDay = {}; rows.forEach(r => byDay[r.date] = Math.max(byDay[r.date]||0, r.kg));
+  const pts = Object.entries(byDay).sort().map(([d,k]) => [d,k]);
+  const vals = pts.map(p => p[1]); const step = Math.max(5, Math.ceil((Math.max(...vals)-Math.min(...vals))/4/5)*5);
+  const lo = Math.max(0, Math.floor((Math.min(...vals)-step)/step)*step), hi = Math.ceil((Math.max(...vals)+step/2)/step)*step;
+  const {g} = lineChart({...cfg, lo, hi, step}, [{pts, color:"var(--gym)", area:true, label: `${pts[pts.length-1][1]} kg`}]);
+  $("lChart").innerHTML = g;
+}
+function drawMeasures(ms){
+  const cfg = {W:600,H:200,L:40,R:12,T:14,B:28};
+  if (!ms.length) { $("mChart").innerHTML = monthTicks(cfg.H,cfg.L,cfg.W,cfg.R) + emptyMsg(300, 90, "Measure waist, chest, arm and hips every two weeks"); return; }
+  const keys = [["waist","var(--ink)"],["chest","var(--dsa)"],["arm","var(--gym)"],["hips","var(--move)"]];
+  const vals = ms.flatMap(m => keys.map(([k]) => m[k]).filter(Boolean));
+  const lo = Math.max(0, Math.floor((Math.min(...vals)-5)/10)*10), hi = Math.ceil((Math.max(...vals)+5)/10)*10;
+  const {g} = lineChart({...cfg, lo, hi, step: Math.max(10, Math.ceil((hi-lo)/4/10)*10)}, keys.map(([k,c]) => ({pts: ms.filter(m => m[k]).map(m => [m.date, m[k]]), color:c})));
+  $("mChart").innerHTML = g;
+}
+function drawMiles(done, lastW){
+  const g0 = goals(), lost = lastW ? g0.start - lastW : 0, st = bestStreak();
+  const prepN = PREPS.filter(p => P.data.done[p.id]).length;
+  const M = [
+    ["First problem on the board", done >= 1, `${Math.min(done,1)}/1`, "--dsa"],["50 problems", done >= 50, `${Math.min(done,50)}/50`, "--dsa"],
+    ["Arrays + Strings cleared", PROBS.filter(p => p.ti <= 1).every(p => solved()[p.id]), `${PROBS.filter(p=>p.ti<=1&&solved()[p.id]).length}/65`, "--dsa"],
+    ["100 problems", done >= 100, `${Math.min(done,100)}/100`, "--dsa"],["200 problems", done >= 200, `${Math.min(done,200)}/200`, "--dsa"],["All 300", done >= 300, `${done}/300`, "--dsa"],
+    ["7-day streak", st >= 7, `${Math.min(st,7)}/7`, "--good"],["21-day streak", st >= 21, `${Math.min(st,21)}/21`, "--good"],
+    ["Run 25 minutes nonstop", g0.runStage >= 8, `level ${g0.runStage}/8`, "--move"],
+    ["First 5 kg down", lost >= 5, `${Math.max(0,lost).toFixed(1)}/5`, "--gym"],["10 kg down", lost >= 10, `${Math.max(0,lost).toFixed(1)}/10`, "--gym"],
+    [`Hit ${g0.target} kg`, !!lastW && lastW <= g0.target, lastW ? `${lastW}` : "—", "--gym"],[`Stretch: ${g0.stretch} kg`, !!lastW && lastW <= g0.stretch, lastW ? `${lastW}` : "—", "--gym"],
+    ["Aptitude + CS core done", prepN >= PREPS.length, `${prepN}/${PREPS.length}`, "--ink"],
+    ["First offer", P.data.companies.some(c => c.status === "Offer"), "", "--good"]
+  ];
+  $("miles").innerHTML = M.map(([t,hit,p,c]) => `<div class="${hit?"hit":""}" style="--c:var(${c})"><i class="dot"></i><span>${esc(t)}</span><em>${hit?"DONE":p}</em></div>`).join("");
+  $("mCount").textContent = `${M.filter(m=>m[1]).length} of ${M.length} unlocked`;
+}
+
+// ---------- events ----------
+function show(v){
+  view = v; lsSet("op88.view", v);
+  document.querySelectorAll(".tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.v === v));
+  ["today","dsa","body","prep","stats"].forEach(k => $("v-"+k).hidden = k !== v);
+  render();
+}
+document.querySelector(".tabs").onclick = e => { const b = e.target.closest("button"); if (b) show(b.dataset.v); };
+$("prev").onclick = () => { sel = addDays(sel,-1); render(); };
+$("next").onclick = () => { if (sel < addDays(TODAY,1)) { sel = addDays(sel,1); render(); } };
+$("runT").onclick = () => { const on = !entry(sel).run; edit(on ? {run:true, runStage: goals().runStage} : {run:false}); };
+$("gymT").onclick = () => edit({gym: !entry(sel).gym});
+$("exPlus").onclick = () => edit({dsaExtra: (entry(sel).dsaExtra||0) + 1});
+$("exMinus").onclick = () => edit({dsaExtra: Math.max(0, (entry(sel).dsaExtra||0) - 1)});
+["runMin","runKm","steps","protein","cal","sleep","weight"].forEach(k => $(k).addEventListener("input", e => edit({[k]: num(e.target.value)})));
+["gymWhat","notes"].forEach(k => $(k).addEventListener("input", e => edit({[k]: e.target.value})));
+[["gStart","start"],["gTarget","target"],["gStretch","stretch"],["gDsa","dsa"],["gSteps","steps"],["gProtein","protein"],["gCal","cal"]].forEach(([id,k]) =>
+  $(id).addEventListener("input", e => { const v = num(e.target.value); if (v && v > 0) { goals()[k] = v; G.save(); render(); } }));
+$("mAdd").onclick = () => { const n = $("mName").value.trim(); if (!n) { $("mName").focus(); return; } goals().meals.push({n, p: num($("mP").value)||0, k: num($("mK").value)||0}); G.save(); ["mName","mP","mK"].forEach(id => $(id).value = ""); render(); };
+
+document.addEventListener("click", e => {
+  const t = e.target.closest("[data-open],[data-rev],[data-redo],[data-meal],[data-unmeal],[data-delmeal],[data-unlift],[data-codel],button[data-d]");
+  if (!t) return;
+  const ds = t.dataset;
+  if (ds.open) return openSheet(ds.open);
+  if (ds.rev) { (D.data.rev[ds.rev] = D.data.rev[ds.rev] || []).push(TODAY); D.save(); return render(); }
+  if (ds.redo) { (D.data.pm[ds.redo] = D.data.pm[ds.redo] || {}).redone = TODAY; D.save(); return render(); }
+  if (ds.meal) { const m = goals().meals[+ds.meal], e = entry(sel); return edit({meals: [...(e.meals||[]), {n:m.n, p:m.p, k:m.k}], protein: (e.protein||0) + m.p, cal: (e.cal||0) + m.k}); }
+  if (ds.unmeal) { const e = entry(sel), ms = [...(e.meals||[])], [m] = ms.splice(+ds.unmeal, 1); return edit({meals: ms, protein: Math.max(0,(e.protein||0) - m.p) || null, cal: Math.max(0,(e.cal||0) - m.k) || null}); }
+  if (ds.delmeal) { goals().meals.splice(+ds.delmeal, 1); G.save(); return render(); }
+  if (ds.unlift) { const L = [...(entry(sel).lifts||[])]; L.splice(+ds.unlift, 1); return edit({lifts: L}); }
+  if (ds.codel) { const i = +ds.codel; if (delArm === i) { P.data.companies.splice(i,1); delArm = null; P.save(); } else delArm = i; return renderPrep(); }
+  if (ds.d && t.closest("#grid88") && !t.disabled) { sel = ds.d; show("today"); window.scrollTo({top:0}); }
+});
+document.addEventListener("change", e => {
+  const ds = e.target.dataset || {};
+  if (ds.id) setSolved(ds.id, e.target.checked);
+  if (ds.prep) { if (e.target.checked) P.data.done[ds.prep] = TODAY; else delete P.data.done[ds.prep]; P.save(); renderPrep(); }
+  if (ds.co) { P.data.companies[+ds.co].status = e.target.value; P.save(); renderPrep(); }
+});
+document.addEventListener("input", e => { const ds = e.target.dataset || {}; if (ds.conote) { P.data.companies[+ds.conote].note = e.target.value; P.save(); } });
+document.addEventListener("toggle", e => {
+  const el = e.target; if (!el.dataset?.kind) return;
+  const ti = +el.dataset.ti, set = el.dataset.kind === "dsa" ? openTopics : openPrep;
+  if (el.dataset.kind === "dsa" && query) return;
+  el.open ? set.add(ti) : set.delete(ti); lsSet(el.dataset.kind === "dsa" ? "op88.open" : "op88.openPrep", [...set]);
+}, true);
+$("q").addEventListener("input", e => { query = e.target.value; renderDsa(); });
+$("hideDone").setAttribute("aria-pressed", hideDone);
+$("hideDone").onclick = () => { hideDone = !hideDone; lsSet("op88.hide", hideDone); $("hideDone").setAttribute("aria-pressed", hideDone); renderDsa(); };
+$("wkPrev").onclick = () => { wk = addDays(wk,-7); renderStats(); };
+$("wkNext").onclick = () => { wk = addDays(wk,7); renderStats(); };
+
+show(["today","dsa","body","prep","stats"].includes(view) ? view : "today");
+timerLoop();
+
+// ---------- offline install ----------
+if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+
+// ---------- backup ----------
+const KEYS = ["op88.days","op88.goals","op88.dsa","op88.prep"];
+$("bExport").onclick = () => {
+  const data = {app:"operation-88", version:1, exportedAt:new Date().toISOString(), days, goals:G.data, dsa:D.data, prep:P.data};
+  const blob = new Blob([JSON.stringify(data)], {type:"application/json"});
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `operation88-backup-${TODAY}.json`;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  lsSet("op88.lastBackup", TODAY); renderBackup();
+};
+$("bImport").onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try {
+    const d = JSON.parse(await f.text());
+    if (d.app !== "operation-88") throw new Error("not ours");
+    days = d.days || {}; lsSet("op88.days", days);
+    G.data = {...G.data, ...(d.goals||{})}; G.save();
+    D.data = {solved:{}, rev:{}, pm:{}, ...(d.dsa||{})}; D.save();
+    P.data = {done:{}, companies:[], ...(d.prep||{})}; P.save();
+    $("bMsg").textContent = `Restored backup from ${d.exportedAt ? d.exportedAt.slice(0,10) : "file"}.`; render();
+  } catch(err) { $("bMsg").textContent = "That file isn't an Operation 88 backup. Pick the .json file you exported."; }
+  e.target.value = "";
+};
+function renderBackup(){
+  const lb = lsGet("op88.lastBackup", null);
+  $("bMsg").textContent = lb ? `Last backup ${fmt(lb)}${diff(lb, TODAY) >= 7 ? " · time for a new one" : ""}.` : "No backup yet. Export one every Sunday.";
+}
+renderBackup();
+</script>
+
+</body>
+</html>
