@@ -268,7 +268,7 @@ details.goals>summary{padding:14px 0;cursor:pointer;font:800 18px var(--display)
     <div class="panel" id="restoreBanner" hidden>
       <div class="pbody">
         <h3>Starting fresh?</h3>
-        <p class="note">If you cleared your browser, your progress is still in the backup files in your phone's Downloads folder. Pick the newest <span class="mono">operation88-backup</span> file to get everything back.</p>
+        <p class="note">If you cleared your browser, your progress is still in the backup files the End day button saved to your Downloads folder. Pick the newest <span class="mono">operation88-backup</span> file to get everything back.</p>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <label class="btn solid" for="bImport2" style="display:inline-flex;align-items:center;cursor:pointer">Restore from backup</label>
           <button class="btn" id="dismissRestore">I'm new, hide this</button>
@@ -338,6 +338,16 @@ details.goals>summary{padding:14px 0;cursor:pointer;font:800 18px var(--display)
       <div>
         <div class="full"><strong>Notes</strong></div>
         <div class="full"><textarea id="notes" placeholder="What went well. What to fix tomorrow."></textarea></div>
+      </div>
+    </div>
+
+    <div class="panel" id="endPanel">
+      <div class="pbody">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap">
+          <h3 id="endTitle">End of day</h3><span class="eyebrow" id="endScore"></span>
+        </div>
+        <p class="note" id="endMsg">Log everything, then tap End day. It saves one backup file to your Downloads folder.</p>
+        <button class="btn solid" id="endDay" style="align-self:flex-start;height:44px;padding:0 20px">End day · save backup</button>
       </div>
     </div>
   </div>
@@ -515,10 +525,6 @@ details.goals>summary{padding:14px 0;cursor:pointer;font:800 18px var(--display)
     <div class="panel">
       <div class="phead"><h2>Backup</h2><span class="eyebrow">your data lives on this phone</span></div>
       <div class="pbody">
-        <label style="display:flex;gap:10px;align-items:flex-start;cursor:pointer">
-          <input type="checkbox" class="ck" id="bAuto" style="margin-top:2px">
-          <span><strong>Save a backup file every day</strong><br><span class="note">The first time you log something each day, a dated .json file is saved to Downloads. Clearing Chrome's history doesn't delete it.</span></span>
-        </label>
         <p class="note" id="bMsg"></p>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn solid" id="bExport">Export backup</button>
@@ -645,7 +651,7 @@ function docStore(key, path, init0){
   const fresh = () => JSON.parse(ser);
   const s = {data: {...fresh(), ...lsGet(key, {})}, dirty:false, timer:null, inflight:Promise.resolve()};
   s.save = () => {
-    lsSet(key, s.data); s.dirty = true; if (typeof autoBackup === "function") autoBackup();
+    lsSet(key, s.data); s.dirty = true;
     if (!db) return setStatus("Saved on this device");
     clearTimeout(s.timer); setStatus("Saving…");
     s.timer = setTimeout(async () => {
@@ -689,7 +695,7 @@ const entry = d => days[d] || {};
 const num = v => (v === "" || v == null || isNaN(+v)) ? null : +v;
 function editDay(d, patch){
   days[d] = {...entry(d), ...patch, date: d};
-  lsSet("op88.days", days); dirty.add(d); queueDay(d); render(); if (typeof autoBackup === "function") autoBackup();
+  lsSet("op88.days", days); dirty.add(d); queueDay(d); render();
 }
 function queueDay(d){
   if (!db) return setStatus("Saved on this device");
@@ -780,6 +786,12 @@ function renderToday(){
   $("calHint").textContent = `Stay under ${g.cal.toLocaleString("en-IN")}`;
   for (const k of ["dsa","run","gym","steps","protein","cal","sleep"]) $("k-"+k).classList.toggle("on", h[k]);
   $("k-weight").classList.toggle("on", !!e.weight);
+  const closed = !!e.closed, lb = lsGet("op88.lastBackup", null);
+  $("endTitle").textContent = sel === TODAY ? "End of day" : `End of ${fmt(sel,{weekday:"long"})}`;
+  $("endScore").textContent = `${score(sel)}/7 habits · ${dsaCount(sel)} DSA`;
+  $("endDay").textContent = closed ? "Save backup again" : "End day · save backup";
+  $("endDay").classList.toggle("solid", !closed);
+  if (!$("endMsg").dataset.keep) $("endMsg").textContent = closed ? `Day closed${lb ? `. Last backup saved ${lb === TODAY ? "today" : fmt(lb)}` : ""}. Changed something? Tap again to save a fresh copy.` : "Log everything, then tap End day. It saves one backup file to your Downloads folder.";
   $("mealBtns").innerHTML = g.meals.map((m,i) => `<button class="chip" data-meal="${i}"><span>${esc(m.n)}</span><em>${m.p}g · ${m.k}</em></button>`).join("") || `<span class="note">Add meal buttons under Stats → Goals.</span>`;
   $("mealsToday").innerHTML = (e.meals||[]).map((m,i) => `<span class="chip"><span>${esc(m.n)}</span><em>+${m.p}g</em><button data-unmeal="${i}" aria-label="Remove ${esc(m.n)}">×</button></span>`).join("");
   renderTimer();
@@ -1258,17 +1270,13 @@ function saveBackupFile(){
   lsSet("op88.lastBackup", TODAY); renderBackup();
 }
 const hasData = () => Object.keys(days).length || Object.keys(D.data.solved||{}).length || Object.keys(P.data.done||{}).length || (P.data.companies||[]).length;
-// once a day, on the first thing logged, save a backup file (needs a tap or keypress to be allowed)
-let autoPending = false;
-function autoBackup(){
-  if (!lsGet("op88.autoBackup", true) || lsGet("op88.lastBackup", null) === TODAY || autoPending) return;
-  if (navigator.userActivation && !navigator.userActivation.isActive) return;
-  autoPending = true;
-  setTimeout(() => { autoPending = false; if (lsGet("op88.lastBackup", null) !== TODAY && hasData()) saveBackupFile(); }, 1500);
-}
 $("bExport").onclick = saveBackupFile;
-$("bAuto").checked = lsGet("op88.autoBackup", true);
-$("bAuto").onchange = e => { lsSet("op88.autoBackup", e.target.checked); renderBackup(); };
+$("endDay").onclick = () => {
+  const d = sel;
+  editDay(d, {closed: true});
+  saveBackupFile();
+  $("endMsg").dataset.keep = "1"; $("endMsg").textContent = "Day saved. The backup file is in your Downloads folder."; setTimeout(() => { delete $("endMsg").dataset.keep; }, 4000);
+};
 async function restoreFrom(e){
   const f = e.target.files[0]; if (!f) return;
   const msg = t => { $("bMsg").textContent = t; };
@@ -1291,8 +1299,8 @@ try { navigator.storage?.persist?.(); } catch(e){}
 function renderBackup(keepMsg){
   $("restoreBanner").hidden = !!(hasData() || lsGet("op88.restoreSeen", false));
   if (keepMsg) return;
-  const lb = lsGet("op88.lastBackup", null), auto = lsGet("op88.autoBackup", true);
-  $("bMsg").textContent = lb ? `Last backup file saved ${lb === TODAY ? "today" : fmt(lb)}.${!auto && diff(lb, TODAY) >= 7 ? " Time for a new one." : ""}` : (auto ? "Your first backup file saves the first time you log something." : "No backup yet. Export one every Sunday.");
+  const lb = lsGet("op88.lastBackup", null);
+  $("bMsg").textContent = lb ? `Last backup file saved ${lb === TODAY ? "today" : fmt(lb)}. Tap End day on the Today tab each night to save a new one.` : "No backup yet. Tap End day on the Today tab tonight to save your first one.";
 }
 renderBackup();
 </script>
